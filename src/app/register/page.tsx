@@ -3,7 +3,6 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/toast";
 import Link from "next/link";
 
@@ -12,7 +11,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -21,10 +19,9 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await api.auth.register({ username, password });
-      login(res.token);
-      toast("ACCOUNT CREATED!", "success");
-      router.push("/dashboard");
+      await api.auth.register({ username, password });
+      toast("ACCOUNT CREATED! SIGN IN TO CONTINUE", "success");
+      router.push("/login");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
       setError(msg);

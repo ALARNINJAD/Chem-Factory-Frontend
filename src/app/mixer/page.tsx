@@ -1,15 +1,20 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/toast";
+import type { MixerEntry } from "@/lib/types";
 
 export default function MixerPage() {
   const { token, isAuthenticated } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  // my mixes
+  const [mixes, setMixes] = useState<MixerEntry[]>([]);
+  const [mixesLoading, setMixesLoading] = useState(true);
 
   // add to mixer
   const [addFirst, setAddFirst] = useState(0);
@@ -18,7 +23,7 @@ export default function MixerPage() {
 
   // check time
   const [checkId, setCheckId] = useState(0);
-  const [checkResult, setCheckResult] = useState<string | null>(null);
+  const [checkResult, setCheckResult] = useState<MixerEntry | null>(null);
 
   // pick mix
   const [pickId, setPickId] = useState(0);
@@ -29,9 +34,40 @@ export default function MixerPage() {
   const [newPrice, setNewPrice] = useState(0);
   const [newMixTime, setNewMixTime] = useState(0);
 
+  const fetchMixes = useCallback(async (token: string) => api.mixer.mixes(token), []);
+
+  const refreshMixes = useCallback(async () => {
+    if (!token) return;
+    try {
+      setMixes(await fetchMixes(token));
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "COULD NOT LOAD MIXES", "error");
+    }
+  }, [token, fetchMixes, toast]);
+
   useEffect(() => {
-    if (!isAuthenticated) router.push("/login");
-  }, [isAuthenticated, router]);
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+    let cancelled = false;
+    async function load() {
+      try {
+        const data = await fetchMixes(token!);
+        if (!cancelled) setMixes(data);
+      } catch (err) {
+        if (cancelled) return;
+        setMixes([]);
+        toast(err instanceof Error ? err.message : "COULD NOT LOAD MIXES", "error");
+      } finally {
+        if (!cancelled) setMixesLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, token, router, fetchMixes, toast]);
 
   if (!isAuthenticated) return null;
 
@@ -41,32 +77,49 @@ export default function MixerPage() {
     try {
       await api.mixer.add(token, { first_ingredient_id: addFirst, second_ingredient_id: addSecond, amount: addAmount });
       toast("ADDED TO MIXER!", "success");
+      refreshMixes();
     } catch (err) {
       toast(err instanceof Error ? err.message : "FAILED", "error");
     }
   }
 
-  async function handleCheckTime(e: FormEvent) {
-    e.preventDefault();
+  async function checkMix(id: number) {
     if (!token) return;
     try {
-      const res = await api.mixer.checkTime(token, { id: checkId });
-      setCheckResult(JSON.stringify(res));
+      const res = await api.mixer.checkTime(token, { id });
+      setCheckResult(res);
     } catch (err) {
       setCheckResult(null);
       toast(err instanceof Error ? err.message : "FAILED", "error");
     }
   }
 
-  async function handlePick(e: FormEvent) {
+  async function handleCheckTime(e: FormEvent) {
     e.preventDefault();
+    await checkMix(checkId);
+  }
+
+  async function pickMix(id: number) {
     if (!token) return;
     try {
-      await api.mixer.pick(token, { id: pickId });
-      toast("MIX PICKED!", "success");
+      const res = await api.mixer.pick(token, { id });
+      if (res.is_new) {
+        setNewId(id);
+        toast("NEW COMBO! NAME THE MATERIAL", "info");
+      } else if (res.remaining_seconds > 0) {
+        toast(`NOT READY YET — ${res.remaining_seconds}s LEFT`, "info");
+      } else {
+        toast("MIX PICKED!", "success");
+      }
+      refreshMixes();
     } catch (err) {
       toast(err instanceof Error ? err.message : "FAILED", "error");
     }
+  }
+
+  async function handlePick(e: FormEvent) {
+    e.preventDefault();
+    await pickMix(pickId);
   }
 
   async function handlePickNew(e: FormEvent) {
@@ -75,9 +128,17 @@ export default function MixerPage() {
     try {
       await api.mixer.pickNew(token, { id: newId, name: newName, price: newPrice, mix_time: newMixTime });
       toast("NEW MIX CREATED!", "success");
+      refreshMixes();
     } catch (err) {
       toast(err instanceof Error ? err.message : "FAILED", "error");
     }
+  }
+
+  function startName(mix: MixerEntry) {
+    setNewId(mix.id);
+    setNewName(mix.material_name || `${mix.first_ingredient_name}+${mix.second_ingredient_name}`);
+    setNewPrice(0);
+    setNewMixTime(0);
   }
 
   return (
@@ -104,6 +165,71 @@ export default function MixerPage() {
         <div className="text-[8px] text-[var(--text-muted)]">
           COMBINE TWO INGREDIENTS TO CREATE NEW MATERIALS
         </div>
+      </div>
+
+      {/* My Mixes */}
+      <div className="pixel-panel hover-glow-purple">
+        <h2 className="text-[10px] text-[var(--accent-secondary)] mb-3">
+          {"<"}MY MIXES{">"}
+        </h2>
+        {mixesLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="pixel-skeleton pixel-skeleton--text" />
+            ))}
+          </div>
+        ) : mixes.length === 0 ? (
+          <div className="pixel-panel pixel-panel--inset text-center py-6">
+            <p className="text-[8px] text-[var(--text-muted)]">
+              NO ACTIVE MIXES... START ONE BELOW
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {mixes.map((mix) => (
+              <div key={mix.id} className="pixel-panel pixel-panel--inset p-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="text-[8px] text-[var(--text-secondary)]">
+                    <span className="text-[var(--text-muted)]">#{mix.id}</span>{" "}
+                    {mix.first_ingredient_name} + {mix.second_ingredient_name}
+                    {" = "}
+                    {mix.is_new ? (
+                      <span className="text-[var(--accent-warning)]">[NEW!]</span>
+                    ) : (
+                      mix.material_name || "[UNKNOWN]"
+                    )}
+                  </div>
+                  <span className="text-[8px] text-[var(--text-muted)]">
+                    QTY: {mix.amount} | {mix.remaining_seconds}s LEFT
+                  </span>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => checkMix(mix.id)}
+                    className="pixel-btn text-[8px] hover-lift"
+                  >
+                    [CHECK]
+                  </button>
+                  {mix.is_new ? (
+                    <button
+                      onClick={() => startName(mix)}
+                      className="pixel-btn pixel-btn--warning text-[8px] hover-lift"
+                    >
+                      [NAME MATERIAL]
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => pickMix(mix.id)}
+                      className="pixel-btn pixel-btn--success text-[8px] hover-lift"
+                    >
+                      [PICK]
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add to Mixer */}
@@ -169,8 +295,10 @@ export default function MixerPage() {
           </button>
         </form>
         {checkResult && (
-          <div className="pixel-panel pixel-panel--inset text-[var(--accent-info)] text-[8px] p-2 mt-3">
-            {">"} {checkResult}
+          <div className="pixel-panel pixel-panel--inset text-[var(--accent-info)] text-[8px] p-2 mt-3 space-y-1">
+            <div>{">"} {checkResult.first_ingredient_name} + {checkResult.second_ingredient_name} = {checkResult.material_name || "[NEW!]"}</div>
+            <div>{">"} QTY: {checkResult.amount}</div>
+            <div>{">"} REMAINING: {checkResult.remaining_seconds}s</div>
           </div>
         )}
       </div>

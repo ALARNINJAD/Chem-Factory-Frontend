@@ -1,3 +1,5 @@
+import type { MixerEntry, MixerListResponse, PickResult } from "@/lib/types";
+
 const API_URL = "";
 
 interface RequestOptions extends RequestInit {
@@ -32,7 +34,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 export const api = {
   auth: {
     register: (data: { username: string; password: string }) =>
-      request<{ token: string }>("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
+      request<{ message: string }>("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
     login: (data: { username: string; password: string }) =>
       request<{ token: string }>("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
   },
@@ -45,29 +47,40 @@ export const api = {
   },
   inventory: {
     export: (token: string) =>
-      request<{ inventory_list: Array<{ id: number; user_id: number; material_id: number; material_name: string; amount: number; date_time: string }> }>(
+      request<{ inventory_list: Array<{ id: number; user_id: number; material_id: number; material_name: string; amount: number; date_time: string }> | null }>(
         "/api/inventory/export",
         { token }
-      ).then((res) => res.InventoryList ?? []),
+      ).then((res) => res.inventory_list ?? []),
   },
   market: {
-    list: () =>
-      request<Array<{ id: number; user_id: number; material_id: number; amount: number; price: number; date_time: string }>>(
-        "/api/market"
-      ),
-    sell: (token: string, data: { material_id: number; number: number; price: number }) =>
-      request("/api/market", { method: "POST", token, body: JSON.stringify(data) }),
-    buy: (token: string, data: { seller_id: number; material_id: number; number: number; price: number }) =>
-      request("/api/market/buy", { method: "POST", token, body: JSON.stringify(data) }),
+    export: (token: string) =>
+      request<{ market_list: Array<{ id: number; user_id: number; material_id: number; username: string; material_name: string; amount: number; price: number; date_time: string }> | null }>(
+        "/api/market/export",
+        { token }
+      ).then((res) => res.market_list ?? []),
+    sell: (token: string, data: { material_id: number; amount: number }) =>
+      request<{ message: string }>("/api/market/set-for-sell", {
+        method: "POST",
+        token,
+        body: JSON.stringify(data),
+      }),
+    buy: (token: string, data: { market_id: number; amount: number }) =>
+      request<{ message: string }>("/api/market/buy", {
+        method: "POST",
+        token,
+        body: JSON.stringify(data),
+      }),
   },
   mixer: {
+    mixes: (token: string) =>
+      request<MixerListResponse>("/api/mixer", { token }).then((res) => res.mixes),
     add: (token: string, data: { first_ingredient_id: number; second_ingredient_id: number; amount: number }) =>
-      request("/api/mixer", { method: "POST", token, body: JSON.stringify(data) }),
+      request<{ message: string }>("/api/mixer", { method: "POST", token, body: JSON.stringify(data) }),
     checkTime: (token: string, data: { id: number }) =>
-      request("/api/mixer", { method: "POST", token, body: JSON.stringify(data) }),
+      request<MixerEntry>("/api/mixer/check", { method: "POST", token, body: JSON.stringify(data) }),
     pick: (token: string, data: { id: number }) =>
-      request("/api/mixer", { method: "PATCH", token, body: JSON.stringify(data) }),
+      request<PickResult>("/api/mixer", { method: "PATCH", token, body: JSON.stringify(data) }),
     pickNew: (token: string, data: { id: number; name: string; price: number; mix_time: number }) =>
-      request("/api/mixer/new", { method: "PATCH", token, body: JSON.stringify(data) }),
+      request<MixerEntry>("/api/mixer/new", { method: "PATCH", token, body: JSON.stringify(data) }),
   },
 };

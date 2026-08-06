@@ -88,12 +88,12 @@ export default function DashboardPage() {
           <div className="mb-3">
             <div className="flex justify-between text-[8px] text-[var(--text-muted)] mb-1">
               <span>XP</span>
-              <span>{user.xp} / {(user.level + 1) * 100}</span>
+              <span>{user.xp} / 1000</span>
             </div>
             <div className="pixel-progress">
               <div
                 className="pixel-progress__fill"
-                style={{ width: `${Math.min((user.xp / ((user.level + 1) * 100)) * 100, 100)}%` }}
+                style={{ width: `${Math.min((user.xp / 1000) * 100, 100)}%` }}
               />
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -24,40 +24,51 @@ export default function MarketPage() {
   // sell form
   const [sellMaterialId, setSellMaterialId] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
-  const [sellPrice, setSellPrice] = useState(0);
 
   // buy form
-  const [buySellerId, setBuySellerId] = useState(0);
-  const [buyMaterialId, setBuyMaterialId] = useState(0);
+  const [buyMarketId, setBuyMarketId] = useState(0);
   const [buyAmount, setBuyAmount] = useState(0);
-  const [buyPrice, setBuyPrice] = useState(0);
 
-  async function loadMarket() {
+  const fetchMarket = useCallback(async (token: string) => api.market.export(token), []);
+
+  const refreshMarket = useCallback(async () => {
+    if (!token) return;
     try {
-      const data = await api.market.list();
-      setItems(data);
+      setItems(await fetchMarket(token));
     } catch {
       // ignore
-    } finally {
-      setLoading(false);
     }
-  }
+  }, [token, fetchMarket]);
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
       router.push("/login");
       return;
     }
-    loadMarket();
-  }, [isAuthenticated, token, router]);
+    let cancelled = false;
+    async function load() {
+      try {
+        const data = await fetchMarket(token!);
+        if (!cancelled) setItems(data);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, token, router, fetchMarket]);
 
   async function handleSell(e: FormEvent) {
     e.preventDefault();
     if (!token) return;
     try {
-      await api.market.sell(token, { material_id: sellMaterialId, number: sellAmount, price: sellPrice });
+      await api.market.sell(token, { material_id: sellMaterialId, amount: sellAmount });
       toast("LISTED FOR SALE!", "success");
-      loadMarket();
+      refreshMarket();
     } catch (err) {
       toast(err instanceof Error ? err.message : "FAILED", "error");
     }
@@ -67,14 +78,9 @@ export default function MarketPage() {
     e.preventDefault();
     if (!token) return;
     try {
-      await api.market.buy(token, {
-        seller_id: buySellerId,
-        material_id: buyMaterialId,
-        number: buyAmount,
-        price: buyPrice,
-      });
+      await api.market.buy(token, { market_id: buyMarketId, amount: buyAmount });
       toast("PURCHASE COMPLETE!", "success");
-      loadMarket();
+      refreshMarket();
     } catch (err) {
       toast(err instanceof Error ? err.message : "FAILED", "error");
     }
@@ -137,10 +143,10 @@ export default function MarketPage() {
                       </div>
                       <div>
                         <div className="text-[8px] text-[var(--text-secondary)]">
-                          MATERIAL #{item.material_id}
+                          {item.material_name}
                         </div>
                         <div className="text-[8px] text-[var(--text-muted)]">
-                          SELLER: #{item.user_id}
+                          SELLER: {item.username}
                         </div>
                       </div>
                     </div>
@@ -154,10 +160,8 @@ export default function MarketPage() {
                     </span>
                     <button
                       onClick={() => {
-                        setBuySellerId(item.user_id);
-                        setBuyMaterialId(item.material_id);
+                        setBuyMarketId(item.id);
                         setBuyAmount(item.amount);
-                        setBuyPrice(item.price);
                         setTab("sell");
                       }}
                       className="pixel-btn pixel-btn--success text-[8px] hover-lift"
@@ -201,19 +205,12 @@ export default function MarketPage() {
                   className="pixel-input"
                 />
               </div>
-              <div>
-                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">PRICE</label>
-                <input
-                  type="number"
-                  placeholder="price..."
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(Number(e.target.value))}
-                  className="pixel-input"
-                />
-              </div>
               <button type="submit" className="pixel-btn pixel-btn--warning w-full hover-lift">
                 [LIST FOR SALE]
               </button>
+              <p className="text-[7px] text-[var(--text-muted)] text-center">
+                PRICE IS DETERMINED BY THE MATERIAL
+              </p>
             </form>
           </div>
 
@@ -224,22 +221,12 @@ export default function MarketPage() {
             </h2>
             <form onSubmit={handleBuy} className="space-y-3">
               <div>
-                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">SELLER ID</label>
+                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">MARKET LISTING ID</label>
                 <input
                   type="number"
-                  placeholder="seller id..."
-                  value={buySellerId}
-                  onChange={(e) => setBuySellerId(Number(e.target.value))}
-                  className="pixel-input"
-                />
-              </div>
-              <div>
-                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">MATERIAL ID</label>
-                <input
-                  type="number"
-                  placeholder="material id..."
-                  value={buyMaterialId}
-                  onChange={(e) => setBuyMaterialId(Number(e.target.value))}
+                  placeholder="market id..."
+                  value={buyMarketId}
+                  onChange={(e) => setBuyMarketId(Number(e.target.value))}
                   className="pixel-input"
                 />
               </div>
@@ -250,16 +237,6 @@ export default function MarketPage() {
                   placeholder="amount..."
                   value={buyAmount}
                   onChange={(e) => setBuyAmount(Number(e.target.value))}
-                  className="pixel-input"
-                />
-              </div>
-              <div>
-                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">PRICE</label>
-                <input
-                  type="number"
-                  placeholder="price..."
-                  value={buyPrice}
-                  onChange={(e) => setBuyPrice(Number(e.target.value))}
                   className="pixel-input"
                 />
               </div>

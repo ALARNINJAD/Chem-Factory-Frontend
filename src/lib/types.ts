@@ -29,6 +29,8 @@ export interface MarketItem {
   id: number;
   user_id: number;
   material_id: number;
+  username: string;
+  material_name: string;
   amount: number;
   price: number;
   date_time: string;
@@ -39,14 +41,30 @@ export interface MixerEntry {
   user_id: number;
   first_ingredient_id: number;
   second_ingredient_id: number;
+  username: string;
+  material_name: string;
+  first_ingredient_name: string;
+  second_ingredient_name: string;
   amount: number;
   date_time: string;
+  remaining_seconds: number;
+  is_new: boolean;
+}
+
+export interface PickResult {
+  is_picked: boolean;
+  is_new: boolean;
+  remaining_seconds: number;
+}
+
+export interface MixerListResponse {
+  mixes: MixerEntry[];
 }
 
 export interface AuthResponse {
   token: string;
 }
 
-export interface ProfileResponse {
-  user: User;
+export interface MessageResponse {
+  message: string;
 }
