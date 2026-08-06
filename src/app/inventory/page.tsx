@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useIsClient } from "@/lib/use-is-client";
 import { useToast } from "@/components/toast";
 import type { InventoryItem } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export default function InventoryPage() {
   const { token, isAuthenticated } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const isClient = useIsClient();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,7 +48,7 @@ export default function InventoryPage() {
     };
   }, [isAuthenticated, token, router, fetchInventory, toast]);
 
-  if (!isAuthenticated) return null;
+  if (!isClient) return null;
 
   return (
     <div className="space-y-6">

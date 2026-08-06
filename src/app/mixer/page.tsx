@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useIsClient } from "@/lib/use-is-client";
 import { useToast } from "@/components/toast";
 import type { MixerEntry } from "@/lib/types";
 
@@ -11,6 +12,7 @@ export default function MixerPage() {
   const { token, isAuthenticated } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const isClient = useIsClient();
 
   // my mixes
   const [mixes, setMixes] = useState<MixerEntry[]>([]);
@@ -69,7 +71,7 @@ export default function MixerPage() {
     };
   }, [isAuthenticated, token, router, fetchMixes, toast]);
 
-  if (!isAuthenticated) return null;
+  if (!isClient) return null;
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();

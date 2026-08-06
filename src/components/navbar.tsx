@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { useIsClient } from "@/lib/use-is-client";
 
 export function Navbar() {
   const { isAuthenticated, logout } = useAuth();
+  const isClient = useIsClient();
+  const authed = isClient && isAuthenticated;
 
   return (
     <nav className="border-b-4 border-[var(--border-color)] bg-[var(--bg-panel)] sticky top-0 z-50">
@@ -13,7 +16,7 @@ export function Navbar() {
           {"<"}CHEM FACTORY{">"}
         </Link>
         <div className="flex items-center gap-4 text-xs">
-          {isAuthenticated ? (
+          {authed ? (
             <>
               <Link href="/dashboard" className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] transition-colors">
                 [DASHBOARD]
