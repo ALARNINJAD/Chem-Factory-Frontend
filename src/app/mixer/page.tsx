@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useIsClient } from "@/lib/use-is-client";
 import { useToast } from "@/components/toast";
-import type { MixerEntry } from "@/lib/types";
+import type { MixerEntry, MaterialCatalogItem } from "@/lib/types";
 
-export default function MixerPage() {
+function MixerPageContent({
+  initialFirst,
+  initialSecond,
+}: {
+  initialFirst: number;
+  initialSecond: number;
+}) {
   const { token, isAuthenticated } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -18,9 +24,13 @@ export default function MixerPage() {
   const [mixes, setMixes] = useState<MixerEntry[]>([]);
   const [mixesLoading, setMixesLoading] = useState(true);
 
+  // known materials (for pickers)
+  const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
+  const [materialsLoading, setMaterialsLoading] = useState(true);
+
   // add to mixer
-  const [addFirst, setAddFirst] = useState(0);
-  const [addSecond, setAddSecond] = useState(0);
+  const [addFirst, setAddFirst] = useState(initialFirst);
+  const [addSecond, setAddSecond] = useState(initialSecond);
   const [addAmount, setAddAmount] = useState(0);
 
   // check time
@@ -37,6 +47,7 @@ export default function MixerPage() {
   const [newMixTime, setNewMixTime] = useState(0);
 
   const fetchMixes = useCallback(async (token: string) => api.mixer.mixes(token), []);
+  const fetchMaterials = useCallback(async (token: string) => api.materials.list(token), []);
 
   const refreshMixes = useCallback(async () => {
     if (!token) return;
@@ -55,12 +66,23 @@ export default function MixerPage() {
     let cancelled = false;
     async function load() {
       try {
-        const data = await fetchMixes(token!);
-        if (!cancelled) setMixes(data);
+        const matData = await fetchMaterials(token!);
+        if (!cancelled) setMaterials(matData);
       } catch (err) {
-        if (cancelled) return;
-        setMixes([]);
-        toast(err instanceof Error ? err.message : "COULD NOT LOAD MIXES", "error");
+        if (!cancelled) {
+          toast(err instanceof Error ? err.message : "COULD NOT LOAD MATERIALS", "error");
+        }
+      } finally {
+        if (!cancelled) setMaterialsLoading(false);
+      }
+      try {
+        const mixData = await fetchMixes(token!);
+        if (!cancelled) setMixes(mixData);
+      } catch (err) {
+        if (!cancelled) {
+          setMixes([]);
+          toast(err instanceof Error ? err.message : "COULD NOT LOAD MIXES", "error");
+        }
       } finally {
         if (!cancelled) setMixesLoading(false);
       }
@@ -69,13 +91,17 @@ export default function MixerPage() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, token, router, fetchMixes, toast]);
+  }, [isAuthenticated, token, router, fetchMixes, fetchMaterials, toast]);
 
   if (!isClient) return null;
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (!token) return;
+    if (addFirst === 0 || addSecond === 0 || addAmount <= 0) {
+      toast("SELECT TWO INGREDIENTS AND AN AMOUNT", "error");
+      return;
+    }
     try {
       await api.mixer.add(token, { first_ingredient_id: addFirst, second_ingredient_id: addSecond, amount: addAmount });
       toast("ADDED TO MIXER!", "success");
@@ -141,6 +167,35 @@ export default function MixerPage() {
     setNewName(mix.material_name || `${mix.first_ingredient_name}+${mix.second_ingredient_name}`);
     setNewPrice(0);
     setNewMixTime(0);
+  }
+
+  function swapIngredients() {
+    setAddFirst(addSecond);
+    setAddSecond(addFirst);
+  }
+
+  function renderIngredientSelect(
+    label: string,
+    value: number,
+    onChange: (v: number) => void
+  ) {
+    return (
+      <div>
+        <label className="text-[8px] text-[var(--text-muted)] mb-1 block">{label}</label>
+        <select
+          className="pixel-input w-full"
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+        >
+          <option value={0}>-- select material --</option>
+          {materials.map((m) => (
+            <option key={m.id} value={m.id}>
+              #{m.id} {m.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
   }
 
   return (
@@ -239,41 +294,42 @@ export default function MixerPage() {
         <h2 className="text-[10px] text-[var(--accent-secondary)] mb-3">
           {"<"}ADD TO MIXER{">"}
         </h2>
-        <form onSubmit={handleAdd} className="space-y-3">
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">FIRST INGREDIENT ID</label>
-            <input
-              type="number"
-              placeholder="ingredient 1..."
-              value={addFirst}
-              onChange={(e) => setAddFirst(Number(e.target.value))}
-              className="pixel-input"
-            />
+        {materialsLoading ? (
+          <div className="space-y-2">
+            <div className="pixel-skeleton pixel-skeleton--text" />
+            <div className="pixel-skeleton pixel-skeleton--text" />
+            <div className="pixel-skeleton pixel-skeleton--text" style={{ width: "40%" }} />
           </div>
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">SECOND INGREDIENT ID</label>
-            <input
-              type="number"
-              placeholder="ingredient 2..."
-              value={addSecond}
-              onChange={(e) => setAddSecond(Number(e.target.value))}
-              className="pixel-input"
-            />
-          </div>
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">AMOUNT</label>
-            <input
-              type="number"
-              placeholder="amount..."
-              value={addAmount}
-              onChange={(e) => setAddAmount(Number(e.target.value))}
-              className="pixel-input"
-            />
-          </div>
-          <button type="submit" className="pixel-btn pixel-btn--primary w-full hover-lift">
-            [ADD]
-          </button>
-        </form>
+        ) : (
+          <form onSubmit={handleAdd} className="space-y-3">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+              {renderIngredientSelect("FIRST INGREDIENT", addFirst, setAddFirst)}
+              <button
+                type="button"
+                onClick={swapIngredients}
+                className="pixel-btn text-[8px] mb-0.5 hover-lift"
+                title="swap"
+              >
+                {"<=>"}
+              </button>
+              {renderIngredientSelect("SECOND INGREDIENT", addSecond, setAddSecond)}
+            </div>
+            <div>
+              <label className="text-[8px] text-[var(--text-muted)] mb-1 block">AMOUNT</label>
+              <input
+                type="number"
+                min={1}
+                placeholder="amount..."
+                value={addAmount}
+                onChange={(e) => setAddAmount(Number(e.target.value))}
+                className="pixel-input"
+              />
+            </div>
+            <button type="submit" className="pixel-btn pixel-btn--primary w-full hover-lift">
+              [ADD]
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Check Time */}
@@ -379,5 +435,20 @@ export default function MixerPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function MixerPage() {
+  const searchParams = useSearchParams();
+  const first = Number(searchParams.get("first")) || 0;
+  const second = Number(searchParams.get("second")) || 0;
+  return (
+    <Suspense fallback={null}>
+      <MixerPageContent
+        key={searchParams.toString()}
+        initialFirst={first}
+        initialSecond={second}
+      />
+    </Suspense>
   );
 }

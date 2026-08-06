@@ -54,7 +54,7 @@ export const api = {
   },
   materials: {
     list: (token: string) =>
-      request<MaterialListResponse>("/api/materials", { token }).then((res) => res.materials),
+      request<MaterialListResponse>("/api/materials", { token }).then((res) => res.materials ?? []),
   },
   market: {
     export: (token: string) =>
@@ -77,7 +77,7 @@ export const api = {
   },
   mixer: {
     mixes: (token: string) =>
-      request<MixerListResponse>("/api/mixer", { token }).then((res) => res.mixes),
+      request<MixerListResponse>("/api/mixer", { token }).then((res) => res.mixes ?? []),
     add: (token: string, data: { first_ingredient_id: number; second_ingredient_id: number; amount: number }) =>
       request<{ message: string }>("/api/mixer", { method: "POST", token, body: JSON.stringify(data) }),
     checkTime: (token: string, data: { id: number }) =>
