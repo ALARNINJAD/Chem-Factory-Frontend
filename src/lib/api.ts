@@ -23,6 +23,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   });
 
   if (!res.ok) {
+    if (res.status === 401 && token) {
+      localStorage.removeItem("token");
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+    }
     const text = await res.text().catch(() => res.statusText);
     throw new Error(text || `Request failed: ${res.status}`);
   }

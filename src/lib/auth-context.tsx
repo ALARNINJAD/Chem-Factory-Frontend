@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 
 interface AuthState {
   token: string | null;
@@ -16,6 +16,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("token");
   });
+
+  useEffect(() => {
+    function handleUnauthorized() {
+      setToken(null);
+    }
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, []);
 
   const login = useCallback((t: string) => {
     localStorage.setItem("token", t);
