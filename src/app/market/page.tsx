@@ -139,7 +139,7 @@ function MarketPageContent({
           onClick={() => setTab("sell")}
           className={`pixel-tab ${tab === "sell" ? "pixel-tab--active" : ""}`}
         >
-          [SELL]
+          [TRADE]
         </button>
       </div>
 
