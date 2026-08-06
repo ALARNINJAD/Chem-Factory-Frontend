@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useIsClient } from "@/lib/use-is-client";
 import { useToast } from "@/components/toast";
-import type { MixerEntry, MaterialCatalogItem } from "@/lib/types";
+import type { MixerEntry, MarketItem } from "@/lib/types";
 
 function MixerPageContent({
   initialFirst,
@@ -24,8 +24,8 @@ function MixerPageContent({
   const [mixes, setMixes] = useState<MixerEntry[]>([]);
   const [mixesLoading, setMixesLoading] = useState(true);
 
-  // known materials (for pickers)
-  const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
+  // known materials (derived from the market, for pickers)
+  const [materials, setMaterials] = useState<MarketItem[]>([]);
   const [materialsLoading, setMaterialsLoading] = useState(true);
 
   // add to mixer
@@ -47,7 +47,7 @@ function MixerPageContent({
   const [newMixTime, setNewMixTime] = useState(0);
 
   const fetchMixes = useCallback(async (token: string) => api.mixer.mixes(token), []);
-  const fetchMaterials = useCallback(async (token: string) => api.materials.list(token), []);
+  const fetchMarket = useCallback(async (token: string) => api.market.export(token), []);
 
   const refreshMixes = useCallback(async () => {
     if (!token) return;
@@ -66,8 +66,8 @@ function MixerPageContent({
     let cancelled = false;
     async function load() {
       try {
-        const matData = await fetchMaterials(token!);
-        if (!cancelled) setMaterials(matData);
+        const marketData = await fetchMarket(token!);
+        if (!cancelled) setMaterials(marketData);
       } catch (err) {
         if (!cancelled) {
           toast(err instanceof Error ? err.message : "COULD NOT LOAD MATERIALS", "error");
@@ -91,7 +91,7 @@ function MixerPageContent({
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, token, router, fetchMixes, fetchMaterials, toast]);
+  }, [isAuthenticated, token, router, fetchMixes, fetchMarket, toast]);
 
   if (!isClient) return null;
 
@@ -179,6 +179,9 @@ function MixerPageContent({
     value: number,
     onChange: (v: number) => void
   ) {
+    const known = Array.from(
+      new Map(materials.map((m) => [m.material_id, m])).values()
+    );
     return (
       <div>
         <label className="text-[8px] text-[var(--text-muted)] mb-1 block">{label}</label>
@@ -188,9 +191,9 @@ function MixerPageContent({
           onChange={(e) => onChange(Number(e.target.value))}
         >
           <option value={0}>-- select material --</option>
-          {materials.map((m) => (
-            <option key={m.id} value={m.id}>
-              #{m.id} {m.name}
+          {known.map((m) => (
+            <option key={m.material_id} value={m.material_id}>
+              #{m.material_id} {m.material_name}
             </option>
           ))}
         </select>

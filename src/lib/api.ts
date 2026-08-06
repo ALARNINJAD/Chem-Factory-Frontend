@@ -1,4 +1,4 @@
-import type { MaterialListResponse, MixerEntry, MixerListResponse, PickResult } from "@/lib/types";
+import type { MixerEntry, MixerListResponse, PickResult } from "@/lib/types";
 
 const API_URL = "";
 
@@ -51,10 +51,6 @@ export const api = {
         "/api/inventory/export",
         { token }
       ).then((res) => res.inventory_list ?? []),
-  },
-  materials: {
-    list: (token: string) =>
-      request<MaterialListResponse>("/api/materials", { token }).then((res) => res.materials ?? []),
   },
   market: {
     export: (token: string) =>
