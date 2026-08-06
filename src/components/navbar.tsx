@@ -18,6 +18,9 @@ export function Navbar() {
               <Link href="/dashboard" className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] transition-colors">
                 [DASHBOARD]
               </Link>
+              <Link href="/inventory" className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] transition-colors">
+                [INVENTORY]
+              </Link>
               <Link href="/market" className="text-[var(--text-muted)] hover:text-[var(--accent-warning)] transition-colors">
                 [MARKET]
               </Link>
