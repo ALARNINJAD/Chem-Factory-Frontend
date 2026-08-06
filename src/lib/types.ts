@@ -16,6 +16,15 @@ export interface Material {
   mix_time?: number;
 }
 
+export interface MaterialCatalogItem extends Material {
+  first_ingredient_name?: string;
+  second_ingredient_name?: string;
+}
+
+export interface MaterialListResponse {
+  materials: MaterialCatalogItem[];
+}
+
 export interface InventoryItem {
   id: number;
   user_id: number;

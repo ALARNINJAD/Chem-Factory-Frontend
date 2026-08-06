@@ -27,6 +27,9 @@ export function Navbar() {
               <Link href="/market" className="text-[var(--text-muted)] hover:text-[var(--accent-warning)] transition-colors">
                 [MARKET]
               </Link>
+              <Link href="/materials" className="text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors">
+                [MATERIALS]
+              </Link>
               <Link href="/mixer" className="text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors">
                 [MIXER]
               </Link>
