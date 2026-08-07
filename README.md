@@ -74,7 +74,7 @@ chem-factory-frontend/
 
 - Node.js 20 or higher
 - npm (or yarn/pnpm/bun)
-- A running instance of the [Chem-Factory](https://github.com/KiyarashFarahani/Chem-Factory) backend API
+- A running instance of the [Chem-Factory](https://github.com/ALARNINJAD/Chem-Factory) backend API
 
 ### Installation
 
@@ -109,7 +109,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-**Make sure the backend is running** on `http://localhost:8090` (see the [backend README](../backend/README.md)).
+**Make sure the backend is running** on `http://localhost:8090`
 
 ## Pages
 
