@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${pixelFont.className} bg-[#0f0f23] text-[#c0c0c0] min-h-screen`}>
+      <body className={`${pixelFont.className} bg-[var(--bg-deep)] text-[#c0c0c0] min-h-screen`}>
         <AuthProvider>
           <ToastProvider>
             <GameProvider>

@@ -5,11 +5,11 @@
    ═══════════════════════════════════════════ */
 
 :root {
-  /* Core palette — dark CRT feel */
-  --bg-deep:      #0f0f23;
-  --bg-panel:     #1a1a2e;
-  --bg-surface:   #252540;
-  --bg-hover:     #2f2f50;
+  /* Core palette — metallic gunmetal gray */
+  --bg-deep:      #15171b;
+  --bg-panel:     #1f2229;
+  --bg-surface:   #2a2e37;
+  --bg-hover:     #343944;
 
   /* Accent colors — chemical / neon */
   --accent-primary:   #00d4aa;  /* teal — main actions */
@@ -20,17 +20,17 @@
   --accent-info:      #38bdf8;  /* sky blue — info */
 
   /* Text */
-  --text-primary:   #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted:     #64748b;
+  --text-primary:   #e6e8ee;
+  --text-secondary: #9aa3b2;
+  --text-muted:     #6b7382;
 
   /* Pixel border */
-  --border-color:   #334155;
-  --border-bright:  #475569;
+  --border-color:   #3a3f4a;
+  --border-bright:  #4d545f;
 
   /* Retro bevel — light (top-left) and dark (bottom-right) */
-  --bevel-light:    #4a4a6a;
-  --bevel-dark:     #111128;
+  --bevel-light:    #4d545f;
+  --bevel-dark:     #0b0c0f;
 
   /* XP bar gradient */
   --xp-fill:        linear-gradient(90deg, #7c3aed, #a78bfa);
@@ -746,7 +746,7 @@ body::after {
   border-left-color: var(--bevel-light);
   border-right-color: var(--bevel-dark);
   border-bottom-color: var(--bevel-dark);
-  background-color: #14142a;
+  background-color: #171a1f;
 }
 
 .bubble {
@@ -763,7 +763,7 @@ body::after {
 .machine-viewport {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, #101026 0%, #0a0a1c 100%);
+  background: linear-gradient(180deg, #121418 0%, #0a0b0d 100%);
 }
 
 .machine-ready {
