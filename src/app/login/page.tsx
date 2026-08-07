@@ -42,10 +42,12 @@ export default function LoginPage() {
         </h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">USERNAME</label>
+            <label htmlFor="login-username" className="text-[8px] text-[var(--text-muted)] mb-1 block">USERNAME</label>
             <input
+              id="login-username"
               type="text"
               placeholder="enter username..."
+              autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="pixel-input"
@@ -53,10 +55,12 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">PASSWORD</label>
+            <label htmlFor="login-password" className="text-[8px] text-[var(--text-muted)] mb-1 block">PASSWORD</label>
             <input
+              id="login-password"
               type="password"
               placeholder="enter password..."
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pixel-input"

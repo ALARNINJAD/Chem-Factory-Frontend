@@ -213,15 +213,9 @@ export default function ProfilePage() {
           </div>
 
           {/* Quick actions */}
-          <div className="grid grid-cols-3 gap-2">
-            <Link href="/inventory" className="pixel-btn w-full hover-lift hover-glow-teal">
-              {"[ INVENTORY ]"}
-            </Link>
-            <Link href="/market" className="pixel-btn pixel-btn--warning w-full hover-lift hover-glow-amber">
-              {"[ MARKET ]"}
-            </Link>
-            <Link href="/mixer" className="pixel-btn pixel-btn--primary w-full hover-lift hover-glow-purple">
-              {"[ MIXER ]"}
+          <div className="grid grid-cols-1 gap-2">
+            <Link href="/dashboard" className="pixel-btn pixel-btn--primary w-full hover-lift hover-glow-teal">
+              {"[ BACK TO THE FLOOR ]"}
             </Link>
           </div>
         </>

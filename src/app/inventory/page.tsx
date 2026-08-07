@@ -75,10 +75,10 @@ export default function InventoryPage() {
         ) : items.length === 0 ? (
           <div className="pixel-panel pixel-panel--inset text-center py-6">
             <p className="text-[8px] text-[var(--text-muted)]">
-              EMPTY... VISIT THE MARKET
+              EMPTY... VISIT THE SHOP ON THE FLOOR
             </p>
-            <Link href="/market" className="pixel-btn pixel-btn--warning text-[8px] mt-3 hover-lift inline-block">
-              {"[ GO TO MARKET ]"}
+            <Link href="/dashboard" className="pixel-btn pixel-btn--warning text-[8px] mt-3 hover-lift inline-block">
+              {"[ GO TO THE FLOOR ]"}
             </Link>
           </div>
         ) : (
@@ -96,10 +96,10 @@ export default function InventoryPage() {
                   x{item.amount}
                 </span>
                 <Link
-                  href={`/market?sell=1&material_id=${item.material_id}`}
+                  href="/dashboard"
                   className="text-[7px] text-[var(--accent-warning)] hover:text-[var(--text-primary)] transition-colors"
                 >
-                  [SELL]
+                  [TRADE]
                 </Link>
               </div>
             ))}

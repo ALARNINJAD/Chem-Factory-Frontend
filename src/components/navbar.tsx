@@ -19,19 +19,10 @@ export function Navbar() {
           {authed ? (
             <>
               <Link href="/dashboard" className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] transition-colors">
-                [DASHBOARD]
+                [FLOOR]
               </Link>
               <Link href="/profile" className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] transition-colors">
                 [PROFILE]
-              </Link>
-              <Link href="/inventory" className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] transition-colors">
-                [INVENTORY]
-              </Link>
-              <Link href="/market" className="text-[var(--text-muted)] hover:text-[var(--accent-warning)] transition-colors">
-                [MARKET]
-              </Link>
-              <Link href="/mixer" className="text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors">
-                [MIXER]
               </Link>
               <button
                 onClick={logout}

@@ -39,10 +39,12 @@ export default function RegisterPage() {
         </h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">USERNAME</label>
+            <label htmlFor="register-username" className="text-[8px] text-[var(--text-muted)] mb-1 block">USERNAME</label>
             <input
+              id="register-username"
               type="text"
               placeholder="choose a username..."
+              autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="pixel-input"
@@ -50,10 +52,12 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">PASSWORD</label>
+            <label htmlFor="register-password" className="text-[8px] text-[var(--text-muted)] mb-1 block">PASSWORD</label>
             <input
+              id="register-password"
               type="password"
               placeholder="choose a password..."
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pixel-input"
