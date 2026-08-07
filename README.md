@@ -1,36 +1,150 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chem-Factory-Frontend
+
+A retro pixel-art web frontend for the Chem-Factory chemical factory simulation game. Explore the factory floor, buy raw materials, combine them in mixing machines, and trade with other players on the market.
+
+## Features
+
+- **User Authentication** - Login and registration with JWT-based sessions
+- **Factory Floor** - Interactive dashboard with machines and stations
+- **Material Mixing** - Pick two ingredients, set quantity, and start a mix with live countdown timers
+- **Material Discovery** - Mix unknown combinations to discover and name new materials
+- **Inventory Management** - View and manage your material stock at the storage station
+- **Marketplace** - Buy from and sell to other players directly on the floor
+- **Player Profiles** - Track balance, XP, level, listings, and active mixes
+- **Pixel Art Style** - Retro CRT aesthetic with custom sprites, chiptune-style sound effects, and GSAP animations
+
+## Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| UI | React 19 |
+| Styling | Tailwind CSS v4 |
+| Animations | GSAP (@gsap/react) |
+| Backend API | Chem-Factory (Go/Gin) REST API |
+
+## Project Structure
+
+```
+chem-factory-frontend/
+├── src/
+│   ├── app/                    # App Router pages & layout
+│   │   ├── layout.tsx          # Root layout (providers, pixel font, HUD)
+│   │   ├── page.tsx            # Title screen
+│   │   ├── login/              # Login page
+│   │   ├── register/           # Registration page
+│   │   ├── dashboard/          # Factory floor (game hub)
+│   │   ├── inventory/          # Inventory page
+│   │   ├── market/             # Marketplace page
+│   │   ├── mixer/              # Mixer page
+│   │   └── profile/            # Player profile page
+│   ├── components/
+│   │   ├── factory/            # Factory station components
+│   │   │   ├── station-shop.tsx    # Shop (buy raw materials)
+│   │   │   ├── station-storage.tsx # Storage (your stock)
+│   │   │   ├── station-market.tsx  # Market (trade with players)
+│   │   │   ├── station-mixer.tsx   # Mixer (combine materials)
+│   │   │   ├── machine-card.tsx    # Mixing machine display
+│   │   │   ├── discovery-modal.tsx # New material discovery flow
+│   │   │   ├── qty-stepper.tsx     # Quantity stepper control
+│   │   │   └── game-modal.tsx      # Shared modal
+│   │   ├── game-hud.tsx        # Persistent HUD (logo, balance, menu)
+│   │   ├── material-icon.tsx   # Material sprite icons
+│   │   └── toast.tsx           # Toast notifications
+│   └── lib/
+│       ├── api.ts              # Backend API client
+│       ├── auth-context.tsx    # Auth state (JWT)
+│       ├── game-context.tsx    # Game state (profile/inventory/market/mixes)
+│       ├── icons.ts            # Material icon overrides
+│       ├── sfx.ts              # Sound effects
+│       ├── types.ts            # TypeScript types
+│       └── use-is-client.ts    # Client-only hook
+├── public/
+│   ├── items/                  # Material sprite assets
+│   └── logo.png, logo-sm.png   # Branding images
+├── next.config.ts              # API rewrite proxy
+├── package.json
+└── tsconfig.json
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20 or higher
+- npm (or yarn/pnpm/bun)
+- A running instance of the [Chem-Factory](https://github.com/KiyarashFarahani/Chem-Factory) backend API
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd Chem-Factory-Frontend
+
+# Install dependencies
+npm install
+
+# Copy environment configuration
+cp .env.local.example .env.local
+```
+
+### Configuration
+
+Edit `.env.local` with the URL of your backend API:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8090
+```
+
+The frontend also proxies `/api/*` requests to the backend via `next.config.ts` rewrites, so API calls stay relative and avoid CORS issues.
+
+### Running the Application
+
+**Start the development server:**
+```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Make sure the backend is running** on `http://localhost:8090` (see the [backend README](../backend/README.md)).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Pages
 
-## Learn More
+| Route | Description |
+|-------|-------------|
+| `/` | Title screen with start button |
+| `/login` | User login |
+| `/register` | User registration |
+| `/dashboard` | Factory floor - the main game hub with mixing machines and stations |
+| `/inventory` | Material inventory |
+| `/market` | Marketplace |
+| `/mixer` | Mixer management |
+| `/profile` | Player profile & stats |
 
-To learn more about Next.js, take a look at the following resources:
+## Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Running with Hot Reload
+```bash
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Linting
+```bash
+npm run lint
+```
 
-## Deploy on Vercel
+### Building for Production
+```bash
+npm run build
+npm start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Backend
+**[Chem-Factory-Backend](https://github.com/ALARNINJAD/Chem-Factory)** - Developed by [Ali Rahiminejad](https://github.com/ALARNINJAD)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT License - feel free to use and modify for your own projects.
