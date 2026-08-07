@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
+import { sfx } from "@/lib/sfx";
 import { MaterialIcon } from "@/components/material-icon";
 import { QtyStepper } from "@/components/factory/qty-stepper";
 import type { MarketItem, InventoryItem } from "@/lib/types";
@@ -29,6 +30,7 @@ export function MarketStation({ playerItems }: { playerItems: MarketItem[] }) {
     setBuyBusy(item.id);
     try {
       await buy(item.id, amount);
+      sfx.buy();
       toast(`BOUGHT ${amount}x ${item.material_name.toUpperCase()}!`, "success");
     } catch (err) {
       toast(err instanceof Error ? err.message : "BUY FAILED", "error");
@@ -49,6 +51,7 @@ export function MarketStation({ playerItems }: { playerItems: MarketItem[] }) {
     setSellBusy(true);
     try {
       await sell(sellMat, sellAmt);
+      sfx.sell();
       toast("LISTED FOR SALE!", "success");
       setSellAmt(1);
       setSellMat(0);

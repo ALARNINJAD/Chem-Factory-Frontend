@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { useAuth } from "@/lib/auth-context";
 import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
+import { sfx } from "@/lib/sfx";
 import { MachineCard } from "@/components/factory/machine-card";
 import { DiscoveryModal } from "@/components/factory/discovery-modal";
 import { MixModal } from "@/components/factory/mix-modal";
@@ -38,15 +39,47 @@ export default function FactoryFloorPage() {
   const router = useRouter();
   const floorRef = useRef<HTMLDivElement>(null);
   const xpRef = useRef<HTMLDivElement>(null);
+  const levelUpRef = useRef<HTMLDivElement>(null);
+  const prevLevel = useRef<number | null>(null);
   const [station, setStation] = useState<StationId | null>(null);
   const [discoveryMix, setDiscoveryMix] = useState<MixerEntry | null>(null);
   const [mixOpen, setMixOpen] = useState(false);
+  const [collected, setCollected] = useState<{ name: string; amount: number } | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (prevLevel.current === null) {
+      prevLevel.current = user.level;
+      return;
+    }
+    if (user.level > prevLevel.current) {
+      prevLevel.current = user.level;
+      sfx.levelUp();
+      if (levelUpRef.current) {
+        const el = levelUpRef.current;
+        gsap.fromTo(el, { scale: 0.6, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.4, ease: "back.out(2)" });
+        gsap.to(el, { autoAlpha: 0, delay: 2.2, duration: 0.5 });
+      }
+    }
+  }, [user]);
+
+  const collectedRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (collected && collectedRef.current) {
+      const el = collectedRef.current;
+      gsap.fromTo(
+        el,
+        { scale: 0.7, autoAlpha: 0, y: 24 },
+        { scale: 1, autoAlpha: 1, y: 0, duration: 0.35, ease: "back.out(2)" }
+      );
+    }
+  }, [collected]);
 
   useGSAP(
     () => {
@@ -88,6 +121,9 @@ export default function FactoryFloorPage() {
       if (res.is_new) {
         setDiscoveryMix(mix);
       } else {
+        sfx.collect();
+        setCollected({ name: mix.material_name || "MATERIAL", amount: mix.amount });
+        window.setTimeout(() => setCollected(null), 2000);
         toast("MATERIAL COLLECTED!", "success");
       }
     } catch (err) {
@@ -229,6 +265,32 @@ export default function FactoryFloorPage() {
 
       <MixModal open={mixOpen} onClose={() => setMixOpen(false)} />
       <DiscoveryModal key={discoveryMix?.id ?? "none"} mix={discoveryMix} onDone={() => setDiscoveryMix(null)} />
+
+      {/* Level up banner */}
+      <div
+        ref={levelUpRef}
+        className="fixed top-24 left-1/2 -translate-x-1/2 z-[9000] pixel-panel text-center px-8 py-4 pointer-events-none"
+        style={{ opacity: 0, visibility: "hidden", borderColor: "var(--accent-warning)" }}
+      >
+        <div className="text-[var(--accent-warning)] text-sm animate-blink">[ LEVEL UP! ]</div>
+        <div className="text-[8px] text-[var(--text-secondary)] mt-2">
+          YOU ARE NOW LEVEL {user?.level}
+        </div>
+      </div>
+
+      {/* Collected popup */}
+      {collected && (
+        <div
+          ref={collectedRef}
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9000] pixel-panel px-6 py-3 text-center pointer-events-none"
+          style={{ borderColor: "var(--accent-success)", background: "var(--bg-panel)" }}
+        >
+          <div className="text-[var(--accent-success)] text-xs">
+            +{collected.amount}x {collected.name.toUpperCase()}
+          </div>
+          <div className="text-[7px] text-[var(--text-muted)] mt-1">ADDED TO STORAGE</div>
+        </div>
+      )}
     </div>
   );
 }

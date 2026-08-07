@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { sfx } from "@/lib/sfx";
 
 type ToastType = "success" | "error" | "info";
 
@@ -23,6 +24,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const toast = useCallback((message: string, type: ToastType = "info") => {
+    if (type === "error") sfx.error();
     const id = nextId++;
     setToasts((prev) => [...prev, { id, message, type, exiting: false }]);
 

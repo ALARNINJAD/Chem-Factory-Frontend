@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
+import { sfx } from "@/lib/sfx";
 import { MaterialIcon } from "@/components/material-icon";
 import { GameModal } from "@/components/factory/game-modal";
 import { CURATED_ICONS, getIconOverride, setIconOverride, clearIconOverride } from "@/lib/icons";
@@ -40,6 +41,7 @@ export function DiscoveryModal({ mix, onDone }: DiscoveryModalProps) {
       await pickNew(mix.id, { name: trimmed, price, mix_time: mixTime });
       if (icon && trimmed) setIconOverride(trimmed, icon);
       const res = await pick(mix.id);
+      sfx.discover();
       if (res.is_picked) {
         toast(`DISCOVERED "${trimmed.toUpperCase()}"!`, "success");
       } else if (res.remaining_seconds > 0) {

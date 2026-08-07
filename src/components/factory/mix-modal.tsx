@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
+import { sfx } from "@/lib/sfx";
 import { MaterialIcon } from "@/components/material-icon";
 import { GameModal } from "@/components/factory/game-modal";
 import { QtyStepper } from "@/components/factory/qty-stepper";
@@ -71,6 +72,7 @@ export function MixModal({ open, onClose }: MixModalProps) {
     setSaving(true);
     try {
       await addMix(first.material_id, second.material_id, amount);
+      sfx.mixStart();
       toast("MIX STARTED!", "success");
       close();
     } catch (err) {
