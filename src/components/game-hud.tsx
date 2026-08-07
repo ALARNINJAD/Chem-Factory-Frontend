@@ -66,7 +66,7 @@ export function GameHud() {
         aria-label="Chem Factory"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-sm.png" alt="Chem Factory" className="h-9 w-auto" />
+        <img src="/logo-sm.png" alt="Chem Factory" className="h-12 w-auto" />
       </Link>
 
       <div className="flex items-center gap-3">
