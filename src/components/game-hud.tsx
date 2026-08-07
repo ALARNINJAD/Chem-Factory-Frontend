@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useAuth } from "@/lib/auth-context";
 import { useGame } from "@/lib/game-context";
+import { useIsClient } from "@/lib/use-is-client";
 import { sfx } from "@/lib/sfx";
 
 gsap.registerPlugin(useGSAP);
@@ -13,9 +15,11 @@ gsap.registerPlugin(useGSAP);
 export function GameHud() {
   const { isAuthenticated, logout } = useAuth();
   const { user } = useGame();
+  const isClient = useIsClient();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const authed = isClient && isAuthenticated;
 
   useGSAP(
     () => {
@@ -56,17 +60,17 @@ export function GameHud() {
 
   return (
     <div className="h-14 shrink-0 border-b-4 border-[var(--border-color)] bg-[var(--bg-panel)] flex items-center justify-between px-4">
-      <a
-        href={isAuthenticated ? "/dashboard" : "/"}
+      <Link
+        href="/"
         className="flex items-center hover:opacity-90 transition-opacity"
         aria-label="Chem Factory"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-sm.png" alt="Chem Factory" className="h-9 w-auto" />
-      </a>
+      </Link>
 
       <div className="flex items-center gap-3">
-        {isAuthenticated && user && (
+        {authed && user && (
           <div className="flex items-center gap-2">
             <span className="sprite-slot" style={{ width: 18, height: 18 }}>
               <span className="pixel-sprite pixel-sprite--coin" />
@@ -74,7 +78,7 @@ export function GameHud() {
             <span className="text-[var(--coin-gold)] text-[10px]">{user.balance}</span>
           </div>
         )}
-        {isAuthenticated && (
+        {authed && (
           <button
             onClick={() => {
               sfx.click();

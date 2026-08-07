@@ -9,6 +9,7 @@ import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
 import { sfx } from "@/lib/sfx";
 import { MachineCard } from "@/components/factory/machine-card";
+import { GameModal } from "@/components/factory/game-modal";
 import { DiscoveryModal } from "@/components/factory/discovery-modal";
 import { MixModal } from "@/components/factory/mix-modal";
 import { ShopStation } from "@/components/factory/station-shop";
@@ -232,7 +233,10 @@ export default function FactoryFloorPage() {
               <div
                 key={s.id}
                 className={`station-tile pixel-panel flex flex-col items-center py-4 hover-lift ${active ? "station-tile--active" : ""}`}
-                onClick={() => setStation(active ? null : s.id)}
+                onClick={() => {
+                  sfx.click();
+                  setStation(s.id);
+                }}
               >
                 <div className="station-icon mb-2 sprite-slot">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -240,35 +244,28 @@ export default function FactoryFloorPage() {
                 </div>
                 <div className="text-[9px] text-[var(--text-secondary)]">[{s.label}]</div>
                 <div className="text-[6px] text-[var(--text-muted)] mt-1">{s.sub}</div>
+                <div className="text-[6px] text-[var(--accent-primary)] mt-1">
+                  [OPEN]
+                </div>
               </div>
             );
           })}
         </div>
       </div>
-
-      {/* Station panels */}
-      {station === "shop" && (
-        <div className="pixel-panel">
-          <h3 className="text-[9px] text-[var(--accent-warning)] mb-3">{"<"}SHOP{">"}</h3>
-          <ShopStation items={shopItems} />
-        </div>
-      )}
-      {station === "storage" && (
-        <div className="pixel-panel">
-          <h3 className="text-[9px] text-[var(--accent-primary)] mb-3">{"<"}STORAGE{">"}</h3>
-          <StorageStation inventory={inventory} />
-        </div>
-      )}
-      {station === "market" && (
-        <div className="pixel-panel">
-          <h3 className="text-[9px] text-[var(--accent-secondary)] mb-3">{"<"}MARKET{">"}</h3>
-          <MarketStation playerItems={playerItems} />
-        </div>
-      )}
       </div>
 
       <MixModal open={mixOpen} onClose={() => setMixOpen(false)} />
       <DiscoveryModal key={discoveryMix?.id ?? "none"} mix={discoveryMix} onDone={() => setDiscoveryMix(null)} />
+
+      <GameModal open={station === "shop"} title="SHOP" tone="amber" onClose={() => setStation(null)}>
+        <ShopStation items={shopItems} />
+      </GameModal>
+      <GameModal open={station === "storage"} title="STORAGE" tone="teal" onClose={() => setStation(null)}>
+        <StorageStation inventory={inventory} />
+      </GameModal>
+      <GameModal open={station === "market"} title="MARKET" tone="purple" wide onClose={() => setStation(null)}>
+        <MarketStation playerItems={playerItems} />
+      </GameModal>
 
       {/* Level up banner */}
       <div
