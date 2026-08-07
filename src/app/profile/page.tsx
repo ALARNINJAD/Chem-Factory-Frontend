@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useIsClient } from "@/lib/use-is-client";
 import { useToast } from "@/components/toast";
+import { MaterialIcon } from "@/components/material-icon";
 import type { User, InventoryItem, MarketItem, MixerEntry } from "@/lib/types";
 
 export default function ProfilePage() {
@@ -163,9 +164,12 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-1">
                 {myListings.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between text-[8px]">
-                    <span className="text-[var(--text-secondary)]">
-                      #{m.id} {m.material_name}
+                  <div key={m.id} className="flex items-center justify-between gap-2 text-[8px]">
+                    <span className="flex items-center gap-2 text-[var(--text-secondary)]">
+                      <MaterialIcon name={m.material_name} id={m.material_id} size={22} />
+                      <span>
+                        #{m.id} {m.material_name}
+                      </span>
                     </span>
                     <span className="text-[var(--text-muted)]">
                       QTY: {m.amount} | ${m.price}
@@ -190,9 +194,14 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-1">
                 {mixes.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between text-[8px]">
-                    <span className="text-[var(--text-secondary)]">
-                      #{m.id} {m.first_ingredient_name} + {m.second_ingredient_name}
+                  <div key={m.id} className="flex items-center justify-between gap-2 text-[8px]">
+                    <span className="flex items-center gap-2 text-[var(--text-secondary)]">
+                      <MaterialIcon name={m.first_ingredient_name} id={m.first_ingredient_id} size={22} />
+                      <span className="text-[var(--text-muted)]">+</span>
+                      <MaterialIcon name={m.second_ingredient_name} id={m.second_ingredient_id} size={22} />
+                      <span>
+                        #{m.id} {m.first_ingredient_name} + {m.second_ingredient_name}
+                      </span>
                     </span>
                     <span className="text-[var(--text-muted)]">
                       {m.remaining_seconds}s LEFT

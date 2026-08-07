@@ -7,13 +7,8 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useIsClient } from "@/lib/use-is-client";
 import { useToast } from "@/components/toast";
+import { MaterialIcon } from "@/components/material-icon";
 import type { InventoryItem } from "@/lib/types";
-
-const SPRITES = ["flask", "bottle", "beaker", "gear", "crystal"] as const;
-
-function getSprite(materialId: number) {
-  return SPRITES[materialId % SPRITES.length];
-}
 
 export default function InventoryPage() {
   const { token, isAuthenticated } = useAuth();
@@ -93,9 +88,7 @@ export default function InventoryPage() {
                 key={item.id}
                 className="pixel-panel pixel-panel--inset p-2 flex flex-col items-center gap-1 hover:border-[var(--accent-primary)] transition-colors hover-lift"
               >
-                <div className="sprite-slot">
-                  <span className={`pixel-sprite pixel-sprite--${getSprite(item.material_id)}`} />
-                </div>
+                <MaterialIcon name={item.material_name} id={item.material_id} />
                 <span className="text-[7px] text-[var(--text-secondary)] text-center">
                   {item.material_name}
                 </span>

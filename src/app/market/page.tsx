@@ -5,13 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/toast";
+import { MaterialIcon } from "@/components/material-icon";
 import type { MarketItem, InventoryItem } from "@/lib/types";
-
-const SPRITES = ["flask", "bottle", "beaker", "gear", "crystal"] as const;
-
-function getSprite(materialId: number) {
-  return SPRITES[materialId % SPRITES.length];
-}
 
 function MarketPageContent({
   initialTab,
@@ -173,9 +168,7 @@ function MarketPageContent({
                 <div key={item.id} className="pixel-panel hover-lift hover-glow-amber">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div className="sprite-slot">
-                        <span className={`pixel-sprite pixel-sprite--${getSprite(item.material_id)}`} />
-                      </div>
+                      <MaterialIcon name={item.material_name} id={item.material_id} />
                       <div>
                         <div className="text-[8px] text-[var(--text-secondary)]">
                           {item.material_name}
@@ -316,17 +309,23 @@ function MarketPageContent({
   );
 }
 
-export default function MarketPage() {
+function MarketPageInner() {
   const searchParams = useSearchParams();
   const sell = searchParams.get("sell") === "1";
   const materialId = Number(searchParams.get("material_id")) || 0;
   return (
+    <MarketPageContent
+      key={searchParams.toString()}
+      initialTab={sell ? "sell" : "browse"}
+      initialMaterialId={materialId}
+    />
+  );
+}
+
+export default function MarketPage() {
+  return (
     <Suspense fallback={null}>
-      <MarketPageContent
-        key={searchParams.toString()}
-        initialTab={sell ? "sell" : "browse"}
-        initialMaterialId={materialId}
-      />
+      <MarketPageInner />
     </Suspense>
   );
 }
