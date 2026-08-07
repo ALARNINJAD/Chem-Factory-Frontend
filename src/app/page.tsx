@@ -49,21 +49,10 @@ export default function Home() {
         ::: INDUSTRIAL CHEMISTRY SIMULATOR :::
       </div>
 
-      <div className="title-sub text-[10px] text-[var(--accent-primary)] animate-blink">
-        PRESS START
-      </div>
-
       <div className="title-menu flex flex-col gap-3 w-64">
-        <Link href="/register" className="pixel-btn pixel-btn--primary w-full hover-lift hover-glow-teal">
-          [ NEW GAME ]
+        <Link href="/login" className="pixel-btn pixel-btn--primary w-full hover-lift hover-glow-teal">
+          [ START ]
         </Link>
-        <Link href="/login" className="pixel-btn w-full hover-lift">
-          [ CONTINUE ]
-        </Link>
-      </div>
-
-      <div className="title-sub text-[7px] text-[var(--text-muted)] text-center max-w-xs leading-relaxed">
-        MIX CHEMICALS · TRADE MATERIALS · BUILD YOUR EMPIRE
       </div>
     </div>
   );
