@@ -6,7 +6,9 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useIsClient } from "@/lib/use-is-client";
 import { useToast } from "@/components/toast";
-import type { MixerEntry, MarketItem } from "@/lib/types";
+import { MaterialIcon } from "@/components/material-icon";
+import { CURATED_ICONS, getIconOverride, setIconOverride, clearIconOverride } from "@/lib/icons";
+import type { InventoryItem, MixerEntry } from "@/lib/types";
 
 function MixerPageContent({
   initialFirst,
@@ -24,8 +26,8 @@ function MixerPageContent({
   const [mixes, setMixes] = useState<MixerEntry[]>([]);
   const [mixesLoading, setMixesLoading] = useState(true);
 
-  // known materials (derived from the market, for pickers)
-  const [materials, setMaterials] = useState<MarketItem[]>([]);
+  // known materials (from the user's inventory, for pickers)
+  const [materials, setMaterials] = useState<InventoryItem[]>([]);
   const [materialsLoading, setMaterialsLoading] = useState(true);
 
   // add to mixer
@@ -45,9 +47,10 @@ function MixerPageContent({
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState(0);
   const [newMixTime, setNewMixTime] = useState(0);
+  const [newIcon, setNewIcon] = useState("");
 
   const fetchMixes = useCallback(async (token: string) => api.mixer.mixes(token), []);
-  const fetchMarket = useCallback(async (token: string) => api.market.export(token), []);
+  const fetchInventory = useCallback(async (token: string) => api.inventory.export(token), []);
 
   const refreshMixes = useCallback(async () => {
     if (!token) return;
@@ -66,8 +69,8 @@ function MixerPageContent({
     let cancelled = false;
     async function load() {
       try {
-        const marketData = await fetchMarket(token!);
-        if (!cancelled) setMaterials(marketData);
+        const inventoryData = await fetchInventory(token!);
+        if (!cancelled) setMaterials(inventoryData);
       } catch (err) {
         if (!cancelled) {
           toast(err instanceof Error ? err.message : "COULD NOT LOAD MATERIALS", "error");
@@ -91,15 +94,36 @@ function MixerPageContent({
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, token, router, fetchMixes, fetchMarket, toast]);
+  }, [isAuthenticated, token, router, fetchMixes, fetchInventory, toast]);
 
   if (!isClient) return null;
+
+  const knownMaterials = Array.from(
+    new Map(materials.map((m) => [m.material_id, m])).values()
+  );
+  const firstMaterial = knownMaterials.find((m) => m.material_id === addFirst);
+  const secondMaterial = knownMaterials.find((m) => m.material_id === addSecond);
+  const maxAmount = Math.min(
+    10,
+    firstMaterial?.amount ?? 10,
+    secondMaterial?.amount ?? 10
+  );
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (!token) return;
     if (addFirst === 0 || addSecond === 0 || addAmount <= 0) {
       toast("SELECT TWO INGREDIENTS AND AN AMOUNT", "error");
+      return;
+    }
+    if (
+      mixes.some(
+        (m) =>
+          (m.first_ingredient_id === addFirst && m.second_ingredient_id === addSecond) ||
+          (m.first_ingredient_id === addSecond && m.second_ingredient_id === addFirst)
+      )
+    ) {
+      toast("ALREADY MIXING THESE INGREDIENTS", "error");
       return;
     }
     try {
@@ -155,6 +179,9 @@ function MixerPageContent({
     if (!token) return;
     try {
       await api.mixer.pickNew(token, { id: newId, name: newName, price: newPrice, mix_time: newMixTime });
+      if (newIcon && newName) {
+        setIconOverride(newName, newIcon);
+      }
       toast("NEW MIX CREATED!", "success");
       refreshMixes();
     } catch (err) {
@@ -163,10 +190,13 @@ function MixerPageContent({
   }
 
   function startName(mix: MixerEntry) {
+    const fallbackName = `${mix.first_ingredient_name}+${mix.second_ingredient_name}`;
+    const name = mix.material_name || fallbackName;
     setNewId(mix.id);
-    setNewName(mix.material_name || `${mix.first_ingredient_name}+${mix.second_ingredient_name}`);
+    setNewName(name);
     setNewPrice(0);
     setNewMixTime(0);
+    setNewIcon(getIconOverride(name) ?? "");
   }
 
   function swapIngredients() {
@@ -182,21 +212,25 @@ function MixerPageContent({
     const known = Array.from(
       new Map(materials.map((m) => [m.material_id, m])).values()
     );
+    const selected = known.find((m) => m.material_id === value);
     return (
       <div>
         <label className="text-[8px] text-[var(--text-muted)] mb-1 block">{label}</label>
-        <select
-          className="pixel-input w-full"
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-        >
-          <option value={0}>-- select material --</option>
-          {known.map((m) => (
-            <option key={m.material_id} value={m.material_id}>
-              #{m.material_id} {m.material_name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <MaterialIcon name={selected?.material_name} id={selected?.material_id} size={24} />
+          <select
+            className="pixel-input w-full flex-1"
+            value={value}
+            onChange={(e) => onChange(Number(e.target.value))}
+          >
+            <option value={0}>-- select material --</option>
+            {known.map((m) => (
+              <option key={m.material_id} value={m.material_id}>
+                #{m.material_id} {m.material_name} (x{m.amount})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
     );
   }
@@ -210,17 +244,24 @@ function MixerPageContent({
       {/* Mixer visualization */}
       <div className="pixel-panel text-center py-6">
         <div className="flex items-center justify-center gap-4 mb-4">
-          <div className="sprite-slot">
-            <span className="pixel-sprite pixel-sprite--beaker animate-float" />
+          <div className="animate-float">
+            <MaterialIcon name={firstMaterial?.material_name} id={firstMaterial?.material_id} />
           </div>
           <span className="text-[var(--accent-secondary)] text-lg">+</span>
-          <div className="sprite-slot">
-            <span className="pixel-sprite pixel-sprite--flask animate-float" style={{ animationDelay: "0.5s" }} />
+          <div className="animate-float" style={{ animationDelay: "0.5s" }}>
+            <MaterialIcon name={secondMaterial?.material_name} id={secondMaterial?.material_id} />
           </div>
           <span className="text-[var(--accent-secondary)] text-lg">=</span>
-          <div className="sprite-slot animate-pulse-glow">
-            <span className="pixel-sprite pixel-sprite--crystal" />
-          </div>
+          {addFirst > 0 && addSecond > 0 ? (
+            <div className="sprite-slot animate-pulse-glow">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/items/Item_487.png" alt="result" className="pixel-sprite-img" />
+            </div>
+          ) : (
+            <div className="sprite-slot animate-pulse-glow">
+              <span className="pixel-sprite pixel-sprite--crystal" />
+            </div>
+          )}
         </div>
         <div className="text-[8px] text-[var(--text-muted)]">
           COMBINE TWO INGREDIENTS TO CREATE NEW MATERIALS
@@ -248,8 +289,13 @@ function MixerPageContent({
           <div className="space-y-2">
             {mixes.map((mix) => (
               <div key={mix.id} className="pixel-panel pixel-panel--inset p-2">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="text-[8px] text-[var(--text-secondary)]">
+                <div className="flex items-center gap-2 text-[8px] text-[var(--text-secondary)]">
+                  <MaterialIcon name={mix.first_ingredient_name} id={mix.first_ingredient_id} size={22} />
+                  <span className="text-[var(--text-muted)]">+</span>
+                  <MaterialIcon name={mix.second_ingredient_name} id={mix.second_ingredient_id} size={22} />
+                  <span className="text-[var(--text-muted)]">=</span>
+                  <MaterialIcon name={mix.material_name || undefined} id={mix.id} size={22} />
+                  <span className="flex-1 min-w-0">
                     <span className="text-[var(--text-muted)]">#{mix.id}</span>{" "}
                     {mix.first_ingredient_name} + {mix.second_ingredient_name}
                     {" = "}
@@ -258,8 +304,8 @@ function MixerPageContent({
                     ) : (
                       mix.material_name || "[UNKNOWN]"
                     )}
-                  </div>
-                  <span className="text-[8px] text-[var(--text-muted)]">
+                  </span>
+                  <span className="text-[var(--text-muted)] whitespace-nowrap">
                     QTY: {mix.amount} | {mix.remaining_seconds}s LEFT
                   </span>
                 </div>
@@ -318,10 +364,11 @@ function MixerPageContent({
               {renderIngredientSelect("SECOND INGREDIENT", addSecond, setAddSecond)}
             </div>
             <div>
-              <label className="text-[8px] text-[var(--text-muted)] mb-1 block">AMOUNT</label>
+              <label className="text-[8px] text-[var(--text-muted)] mb-1 block">AMOUNT (1-{maxAmount})</label>
               <input
                 type="number"
                 min={1}
+                max={maxAmount}
                 placeholder="amount..."
                 value={addAmount}
                 onChange={(e) => setAddAmount(Number(e.target.value))}
@@ -432,6 +479,47 @@ function MixerPageContent({
               className="pixel-input"
             />
           </div>
+          <div>
+            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">ICON (optional)</label>
+            <div className="flex items-center gap-2 mb-2">
+              {newIcon ? (
+                <div className="sprite-slot">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/items/${newIcon}`} alt="preview" className="pixel-sprite-img" />
+                </div>
+              ) : (
+                <MaterialIcon name={newName} id={newId} size={36} />
+              )}
+              <span className="text-[7px] text-[var(--text-muted)]">PREVIEW</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewIcon("");
+                  if (newName) clearIconOverride(newName);
+                }}
+                className="pixel-btn text-[8px] ml-auto hover-lift"
+              >
+                [DEFAULT]
+              </button>
+            </div>
+            <div className="pixel-panel pixel-panel--inset p-2 grid grid-cols-8 sm:grid-cols-10 max-h-40 overflow-y-auto gap-1">
+              {CURATED_ICONS.map((file) => {
+                const active = file === newIcon;
+                return (
+                  <button
+                    key={file}
+                    type="button"
+                    title={file}
+                    onClick={() => setNewIcon(active ? "" : file)}
+                    className={`pixel-sprite-pick ${active ? "pixel-sprite-pick--active" : ""}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/items/${file}`} alt={file} className="pixel-sprite-img" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <button type="submit" className="pixel-btn pixel-btn--warning w-full hover-lift">
             [CREATE]
           </button>
@@ -441,17 +529,23 @@ function MixerPageContent({
   );
 }
 
-export default function MixerPage() {
+function MixerPageInner() {
   const searchParams = useSearchParams();
   const first = Number(searchParams.get("first")) || 0;
   const second = Number(searchParams.get("second")) || 0;
   return (
+    <MixerPageContent
+      key={searchParams.toString()}
+      initialFirst={first}
+      initialSecond={second}
+    />
+  );
+}
+
+export default function MixerPage() {
+  return (
     <Suspense fallback={null}>
-      <MixerPageContent
-        key={searchParams.toString()}
-        initialFirst={first}
-        initialSecond={second}
-      />
+      <MixerPageInner />
     </Suspense>
   );
 }
