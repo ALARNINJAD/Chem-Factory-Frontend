@@ -18,6 +18,7 @@ interface GameStore {
   pick: (id: number) => Promise<PickResult>;
   pickNew: (id: number, data: { name: string; price: number; mix_time: number }) => Promise<void>;
   liveRemaining: (mix: MixerEntry) => number;
+  mixTotal: (id: number) => number;
 }
 
 const GameContext = createContext<GameStore | null>(null);
@@ -29,6 +30,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [market, setMarket] = useState<MarketItem[]>([]);
   const [mixes, setMixes] = useState<MixerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totals, setTotals] = useState<Record<number, number>>({});
   const loadedAtRef = useRef(0);
   const [, setTick] = useState(0);
 
@@ -45,6 +47,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setMarket(mk);
     setMixes(mx);
     loadedAtRef.current = Date.now();
+    setTotals((prev) => {
+      const next = { ...prev };
+      for (const m of mx) {
+        if (next[m.id] === undefined) next[m.id] = Math.max(1, m.remaining_seconds);
+      }
+      return next;
+    });
   }, [token]);
 
   useEffect(() => {
@@ -79,6 +88,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  const mixTotal = useCallback((id: number) => totals[id] ?? 1, [totals]);
 
   const buy = useCallback(
     async (marketId: number, amount: number) => {
@@ -132,7 +143,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   return (
     <GameContext.Provider
-      value={{ user, inventory, market, mixes, loading, refresh, buy, sell, addMix, pick, pickNew, liveRemaining }}
+      value={{ user, inventory, market, mixes, loading, refresh, buy, sell, addMix, pick, pickNew, liveRemaining, mixTotal }}
     >
       {children}
     </GameContext.Provider>
