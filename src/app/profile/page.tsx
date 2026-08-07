@@ -65,7 +65,7 @@ export default function ProfilePage() {
   const activeMixes = mixes.filter((m) => m.remaining_seconds > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-6 max-w-5xl mx-auto page-enter">
       <h1 className="text-sm text-[var(--accent-primary)]">
         {"<"}PROFILE{">"}
       </h1>

@@ -133,20 +133,22 @@ export default function FactoryFloorPage() {
 
   if (loading && !user) {
     return (
-      <div className="space-y-4" ref={floorRef}>
-        <div className="pixel-panel space-y-3">
-          <div className="flex justify-between">
-            <div className="pixel-skeleton pixel-skeleton--title" />
-            <div className="pixel-skeleton pixel-skeleton--text" style={{ width: 40 }} />
-          </div>
-          <div className="pixel-skeleton pixel-skeleton--text" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="pixel-panel pixel-panel--inset p-3">
-              <div className="pixel-skeleton pixel-skeleton--box" />
+      <div className="h-full overflow-y-auto floor-bg" ref={floorRef}>
+        <div className="max-w-6xl mx-auto p-4 sm:p-5 space-y-4">
+          <div className="pixel-panel space-y-3">
+            <div className="flex justify-between">
+              <div className="pixel-skeleton pixel-skeleton--title" />
+              <div className="pixel-skeleton pixel-skeleton--text" style={{ width: 40 }} />
             </div>
-          ))}
+            <div className="pixel-skeleton pixel-skeleton--text" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="pixel-panel pixel-panel--inset p-3">
+                <div className="pixel-skeleton pixel-skeleton--box" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -155,7 +157,8 @@ export default function FactoryFloorPage() {
   const pct = user ? Math.min((user.xp / 1000) * 100, 100) : 0;
 
   return (
-    <div className="floor-bg p-4 sm:p-5 space-y-5 page-enter" ref={floorRef}>
+    <div className="floor-bg h-full overflow-y-auto page-enter" ref={floorRef}>
+      <div className="max-w-6xl mx-auto p-4 sm:p-5 space-y-5">
       {/* HUD */}
       <div className="hud-panel pixel-panel flex items-center justify-between gap-3">
         <div>
@@ -262,6 +265,7 @@ export default function FactoryFloorPage() {
           <MarketStation playerItems={playerItems} />
         </div>
       )}
+      </div>
 
       <MixModal open={mixOpen} onClose={() => setMixOpen(false)} />
       <DiscoveryModal key={discoveryMix?.id ?? "none"} mix={discoveryMix} onDone={() => setDiscoveryMix(null)} />

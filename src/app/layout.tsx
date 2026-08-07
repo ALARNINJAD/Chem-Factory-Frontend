@@ -4,7 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { GameProvider } from "@/lib/game-context";
 import { ToastProvider } from "@/components/toast";
-import { Navbar } from "@/components/navbar";
+import { GameHud } from "@/components/game-hud";
 
 const pixelFont = Press_Start_2P({ weight: "400", subsets: ["latin"] });
 
@@ -15,13 +15,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${pixelFont.className} bg-[var(--bg-deep)] text-[#c0c0c0] min-h-screen`}>
+    <html lang="en" className="h-full">
+      <body className={`${pixelFont.className} bg-[var(--bg-deep)] text-[#c0c0c0] h-dvh overflow-hidden flex flex-col`}>
         <AuthProvider>
           <ToastProvider>
             <GameProvider>
-              <Navbar />
-              <main className="max-w-5xl mx-auto px-4 py-8 page-enter">{children}</main>
+              <GameHud />
+              <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
             </GameProvider>
           </ToastProvider>
         </AuthProvider>

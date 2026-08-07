@@ -46,7 +46,7 @@ export default function InventoryPage() {
   if (!isClient) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-6 max-w-5xl mx-auto page-enter">
       <div className="flex items-center justify-between">
         <h1 className="text-sm text-[var(--accent-primary)]">
           {"<"}INVENTORY{">"}

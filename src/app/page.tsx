@@ -16,7 +16,7 @@ export default function Home() {
   }, [isAuthenticated, router]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center gap-10 page-enter">
+    <div className="h-full overflow-y-auto flex flex-col items-center justify-center text-center gap-10 page-enter">
       {/* Pixel art logo */}
       <div className="relative">
         <h1 className="text-2xl tracking-wider text-[var(--accent-primary)] animate-pulse-glow">

@@ -35,8 +35,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto flex items-center justify-center min-h-[60vh] page-enter">
-      <div className="pixel-panel">
+    <div className="h-full overflow-y-auto flex items-center justify-center p-4 page-enter">
+      <div className="pixel-panel w-full max-w-sm">
         <h1 className="text-sm mb-6 text-[var(--accent-primary)] text-center">
           {"<"}SIGN IN{">"}
         </h1>

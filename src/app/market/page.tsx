@@ -117,7 +117,7 @@ function MarketPageContent({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-4 max-w-5xl mx-auto page-enter">
       <h1 className="text-sm text-[var(--accent-warning)]">
         {"<"}MARKET{">"}
       </h1>
