@@ -8,6 +8,40 @@ import { MaterialIcon } from "@/components/material-icon";
 import { QtyStepper } from "@/components/factory/qty-stepper";
 import type { InventoryItem } from "@/lib/types";
 
+function Slot({
+  label,
+  item,
+  active,
+  onClick,
+}: {
+  label: string;
+  item: InventoryItem | null;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`pixel-panel pixel-panel--inset flex flex-col items-center p-2 min-w-24 hover-lift ${
+        active && !item ? "station-tile--active" : ""
+      }`}
+    >
+      <span className="text-[6px] text-[var(--text-muted)] mb-1">{label}</span>
+      {item ? (
+        <>
+          <MaterialIcon name={item.material_name} id={item.material_id} size={30} />
+          <span className="text-[6px] text-[var(--text-secondary)] mt-1 max-w-20 truncate">
+            {item.material_name}
+          </span>
+        </>
+      ) : (
+        <span className="sprite-slot text-[var(--text-muted)] text-lg">?</span>
+      )}
+    </button>
+  );
+}
+
 export function MixStation() {
   const { inventory, mixes, addMix } = useGame();
   const { toast } = useToast();
@@ -76,98 +110,86 @@ export function MixStation() {
   }
 
   return (
-    <div className="space-y-3">
-      {/* Slots */}
-      <div className="flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => setPicking(1)}
-          className={`pixel-panel pixel-panel--inset flex flex-col items-center p-2 hover-lift ${
-            picking === 1 && !first ? "station-tile--active" : ""
-          }`}
-        >
-          <span className="text-[6px] text-[var(--text-muted)] mb-1">1ST</span>
-          {first ? (
-            <MaterialIcon name={first.material_name} id={first.material_id} size={30} />
-          ) : (
-            <span className="sprite-slot text-[var(--text-muted)] text-lg">?</span>
-          )}
-        </button>
-        <span className="text-[var(--accent-secondary)] text-sm">+</span>
-        <button
-          type="button"
-          onClick={() => setPicking(2)}
-          className={`pixel-panel pixel-panel--inset flex flex-col items-center p-2 hover-lift ${
-            picking === 2 && !second ? "station-tile--active" : ""
-          }`}
-        >
-          <span className="text-[6px] text-[var(--text-muted)] mb-1">2ND</span>
-          {second ? (
-            <MaterialIcon name={second.material_name} id={second.material_id} size={30} />
-          ) : (
-            <span className="sprite-slot text-[var(--text-muted)] text-lg">?</span>
-          )}
-        </button>
-        <span className="text-[var(--accent-secondary)] text-sm">=</span>
-        <div className="pixel-panel pixel-panel--inset flex flex-col items-center p-2">
-          <span className="text-[6px] text-[var(--text-muted)] mb-1">OUT</span>
-          <span className="sprite-slot">
-            <span className="pixel-sprite pixel-sprite--crystal animate-pulse-glow" />
-          </span>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Left: ingredient list */}
+      <div className="min-w-0">
+        <div className="text-[8px] text-[var(--text-secondary)] mb-2">
+          {"<"}INGREDIENTS{">"}
         </div>
-      </div>
-
-      <div className="text-[7px] text-[var(--text-muted)] text-center">
-        {picking === 1 ? "CLICK A MATERIAL FOR THE FIRST SLOT" : "CLICK A MATERIAL FOR THE SECOND SLOT"}
-      </div>
-
-      {/* Picker */}
-      {materials.length === 0 ? (
-        <div className="pixel-panel pixel-panel--inset text-center py-6">
-          <p className="text-[8px] text-[var(--text-muted)]">
-            INVENTORY EMPTY... BUY MATERIALS AT THE SHOP
-          </p>
-        </div>
-      ) : (
-        <div className="pixel-panel pixel-panel--inset p-2 grid grid-cols-4 sm:grid-cols-8 gap-2 max-h-44 overflow-y-auto">
-          {materials.map((m) => {
-            const selected = first?.material_id === m.material_id || second?.material_id === m.material_id;
-            return (
-              <button
-                key={m.material_id}
-                type="button"
-                onClick={() => assign(m)}
-                className={`pixel-sprite-pick flex flex-col items-center justify-center gap-1 p-1 h-auto ${
-                  selected ? "pixel-sprite-pick--active" : ""
-                }`}
-              >
-                <MaterialIcon name={m.material_name} id={m.material_id} size={26} />
-                <span className="text-[5px] text-[var(--text-secondary)] truncate w-full text-center">
-                  {m.material_name}
-                </span>
-                <span className="text-[6px] text-[var(--accent-primary)]">x{m.amount}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Amount + start */}
-      {first && second && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[7px] text-[var(--text-muted)]">QTY</span>
-            <QtyStepper value={amount} onChange={setAmount} max={maxAmount} size="sm" />
+        {materials.length === 0 ? (
+          <div className="pixel-panel pixel-panel--inset text-center py-6">
+            <p className="text-[8px] text-[var(--text-muted)]">
+              INVENTORY EMPTY... BUY MATERIALS AT THE SHOP
+            </p>
           </div>
-          <button
-            onClick={handleStart}
-            disabled={saving}
-            className="pixel-btn pixel-btn--primary hover-lift"
-          >
-            {saving ? "[STARTING...]" : "[START MIX]"}
-          </button>
+        ) : (
+          <div className="pixel-panel pixel-panel--inset p-2 max-h-56 overflow-y-auto space-y-1">
+            {materials.map((m) => {
+              const selected =
+                first?.material_id === m.material_id || second?.material_id === m.material_id;
+              return (
+                <button
+                  key={m.material_id}
+                  type="button"
+                  onClick={() => assign(m)}
+                  className={`ingredient-row ${selected ? "ingredient-row--active" : ""}`}
+                >
+                  <MaterialIcon name={m.material_name} id={m.material_id} size={24} />
+                  <span className="flex-1 min-w-0 text-left text-[7px] text-[var(--text-secondary)] truncate">
+                    {m.material_name}
+                  </span>
+                  <span className="text-[8px] text-[var(--accent-primary)]">x{m.amount}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="text-[7px] text-[var(--text-muted)] mt-2 text-center">
+          CLICK AN INGREDIENT TO FILL THE{" "}
+          <span className="text-[var(--accent-secondary)]">
+            {picking === 1 ? "1ST" : "2ND"}
+          </span>{" "}
+          SLOT
         </div>
-      )}
+      </div>
+
+      {/* Right: mix setup */}
+      <div className="min-w-0 flex flex-col gap-3">
+        <div className="text-[8px] text-[var(--text-secondary)]">
+          {"<"}MIX SETUP{">"}
+        </div>
+        <div className="pixel-panel pixel-panel--inset p-3 flex flex-col items-center gap-2">
+          <div className="flex items-start justify-center gap-2">
+            <Slot label="1ST" item={first} active={picking === 1} onClick={() => setPicking(1)} />
+            <span className="text-[var(--accent-secondary)] text-sm mt-8">+</span>
+            <Slot label="2ND" item={second} active={picking === 2} onClick={() => setPicking(2)} />
+            <span className="text-[var(--accent-secondary)] text-sm mt-8">=</span>
+            <div className="pixel-panel pixel-panel--inset flex flex-col items-center p-2 min-w-24">
+              <span className="text-[6px] text-[var(--text-muted)] mb-1">OUT</span>
+              <span className="sprite-slot">
+                <span className="pixel-sprite pixel-sprite--crystal animate-pulse-glow" />
+              </span>
+              <span className="text-[6px] text-[var(--accent-warning)] mt-1">NEW?</span>
+            </div>
+          </div>
+
+          {first && second && (
+            <div className="flex items-center justify-between w-full mt-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[7px] text-[var(--text-muted)]">QTY</span>
+                <QtyStepper value={amount} onChange={setAmount} max={maxAmount} size="sm" />
+              </div>
+              <button
+                onClick={handleStart}
+                disabled={saving}
+                className="pixel-btn pixel-btn--primary hover-lift"
+              >
+                {saving ? "[STARTING...]" : "[START MIX]"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

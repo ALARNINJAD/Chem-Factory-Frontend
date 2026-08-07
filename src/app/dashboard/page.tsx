@@ -174,10 +174,8 @@ export default function FactoryFloorPage() {
             <div ref={xpRef} className="pixel-progress__fill" style={{ width: `${pct}%` }} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="sprite-slot" style={{ width: 18, height: 18 }}>
-            <span className="pixel-sprite pixel-sprite--coin" />
-          </span>
+        <div className="flex items-center gap-1">
+          <span className="text-[var(--coin-gold)] text-[10px]">$</span>
           <span className="text-[var(--coin-gold)] text-[10px]">{user?.balance} credits</span>
         </div>
       </div>

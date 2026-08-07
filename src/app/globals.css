@@ -120,6 +120,14 @@ body {
   transform: none;
 }
 
+.pixel-btn--mini {
+  padding: 2px 5px;
+  font-size: 8px;
+  line-height: 1;
+  min-width: 20px;
+  min-height: 20px;
+}
+
 .pixel-btn--primary {
   background: #1a5c4a;
   border-top-color: #2dd4aa;
@@ -540,47 +548,30 @@ body::after {
     3px 6px 0 #a78bfa;
 }
 
-/* Coin */
-.pixel-sprite--coin {
-  transform: scale(4);
-  box-shadow:
-    2px 0px 0 #fbbf24,
-    3px 0px 0 #fbbf24,
-    4px 0px 0 #fbbf24,
-    1px 1px 0 #fbbf24,
-    2px 1px 0 #fcd34d,
-    3px 1px 0 #fbbf24,
-    4px 1px 0 #fcd34d,
-    5px 1px 0 #fbbf24,
-    0px 2px 0 #fbbf24,
-    1px 2px 0 #fcd34d,
-    2px 2px 0 #f59e0b,
-    3px 2px 0 #fcd34d,
-    4px 2px 0 #f59e0b,
-    5px 2px 0 #fcd34d,
-    6px 2px 0 #fbbf24,
-    0px 3px 0 #fbbf24,
-    1px 3px 0 #fcd34d,
-    2px 3px 0 #f59e0b,
-    3px 3px 0 #fcd34d,
-    4px 3px 0 #f59e0b,
-    5px 3px 0 #fcd34d,
-    6px 3px 0 #fbbf24,
-    0px 4px 0 #fbbf24,
-    1px 4px 0 #fbbf24,
-    2px 4px 0 #f59e0b,
-    3px 4px 0 #fbbf24,
-    4px 4px 0 #f59e0b,
-    5px 4px 0 #fbbf24,
-    6px 4px 0 #fbbf24,
-    1px 5px 0 #fbbf24,
-    2px 5px 0 #fbbf24,
-    3px 5px 0 #fbbf24,
-    4px 5px 0 #fbbf24,
-    5px 5px 0 #fbbf24,
-    2px 6px 0 #fbbf24,
-    3px 6px 0 #fbbf24,
-    4px 6px 0 #fbbf24;
+/* Ingredient list row (mixer station) */
+.ingredient-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--bg-deep);
+  border: 2px solid var(--border-color);
+  border-top-color: var(--bevel-dark);
+  border-left-color: var(--bevel-dark);
+  border-right-color: var(--bevel-light);
+  border-bottom-color: var(--bevel-light);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ingredient-row:hover {
+  background: var(--bg-hover);
+}
+
+.ingredient-row--active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 6px rgba(0, 212, 170, 0.4);
 }
 
 /* ═══════════════════════════════════════════
