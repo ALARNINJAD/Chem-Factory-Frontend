@@ -784,3 +784,17 @@ body::after {
   animation: float 3s steps(6) infinite;
 }
 
+.title-bg {
+  background:
+    radial-gradient(ellipse at center, rgba(0, 212, 170, 0.06) 0%, transparent 60%),
+    linear-gradient(rgba(58, 63, 74, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58, 63, 74, 0.15) 1px, transparent 1px),
+    var(--bg-deep);
+  background-size: 100% 100%, 24px 24px, 24px 24px, 100% 100%;
+}
+
+.title-logo {
+  filter: drop-shadow(0 0 18px rgba(0, 212, 170, 0.25));
+}
+
+

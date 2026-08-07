@@ -35,11 +35,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto flex items-center justify-center p-4 page-enter">
+    <div className="h-full overflow-y-auto title-bg flex flex-col items-center justify-center gap-5 p-4 page-enter">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo-sm.png" alt="Chem Factory" className="h-14 w-auto" />
       <div className="pixel-panel w-full max-w-sm">
-        <h1 className="text-sm mb-6 text-[var(--accent-primary)] text-center">
+        <h1 className="text-sm mb-1 text-[var(--accent-primary)] text-center">
           {"<"}SIGN IN{">"}
         </h1>
+        <p className="text-center text-[7px] text-[var(--text-muted)] mb-5">
+          ENTER YOUR FACTORY CREDENTIALS
+        </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label htmlFor="login-username" className="text-[8px] text-[var(--text-muted)] mb-1 block">USERNAME</label>
@@ -87,6 +92,9 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
+      <Link href="/" className="text-[8px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+        [ BACK TO TITLE ]
+      </Link>
     </div>
   );
 }

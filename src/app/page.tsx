@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import { useAuth } from "@/lib/auth-context";
+
+gsap.registerPlugin(useGSAP);
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -15,64 +20,50 @@ export default function Home() {
     }
   }, [isAuthenticated, router]);
 
+  useGSAP(
+    () => {
+      gsap.fromTo(
+        ".title-logo",
+        { autoAlpha: 0, scale: 0.92, y: -24 },
+        { autoAlpha: 1, scale: 1, y: 0, duration: 0.6, ease: "back.out(1.4)" }
+      );
+      gsap.fromTo(".title-sub", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, delay: 0.35 });
+      gsap.fromTo(
+        ".title-menu > *",
+        { autoAlpha: 0, y: 12 },
+        { autoAlpha: 1, y: 0, duration: 0.3, stagger: 0.15, delay: 0.55 }
+      );
+    },
+    { scope: root }
+  );
+
   return (
-    <div className="h-full overflow-y-auto flex flex-col items-center justify-center text-center gap-10 page-enter">
-      {/* Pixel art logo */}
-      <div className="relative">
-        <h1 className="text-2xl tracking-wider text-[var(--accent-primary)] animate-pulse-glow">
-          CHEM FACTORY
-        </h1>
-        <div className="mt-3 text-[8px] text-[var(--text-muted)] tracking-widest">
-          {"::: INDUSTRIAL CHEMISTRY SIMULATOR :::"}
-        </div>
+    <div
+      ref={root}
+      className="h-full overflow-y-auto title-bg flex flex-col items-center justify-center gap-6 p-4 page-enter"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="Chem Factory" className="title-logo max-w-xs sm:max-w-sm w-full" />
+
+      <div className="title-sub text-[8px] text-[var(--text-muted)] tracking-widest text-center">
+        ::: INDUSTRIAL CHEMISTRY SIMULATOR :::
       </div>
 
-      {/* Pixel art factory with animated smoke */}
-      <div className="pixel-panel p-6">
-        <div className="relative inline-block">
-          {/* Smoke puffs */}
-          <div className="absolute -top-6 left-[18px] flex gap-1">
-            <span className="w-1.5 h-1.5 bg-[var(--text-muted)] opacity-30 animate-float" style={{ animationDelay: "0s" }} />
-            <span className="w-1 h-1 bg-[var(--text-muted)] opacity-20 animate-float" style={{ animationDelay: "0.5s" }} />
-            <span className="w-1.5 h-1.5 bg-[var(--text-muted)] opacity-25 animate-float" style={{ animationDelay: "1s" }} />
-          </div>
-          <pre className="font-mono text-[8px] leading-tight text-[var(--text-secondary)]">
-{`    ___
-   |   |~~
-   |   |~~
-   |___|
-  /|   |\\
- / |   | \\
-/  |___|  \\
-   |   |
-===|   |===
-   |___|`}
-          </pre>
-        </div>
-        <div className="mt-4 flex justify-center gap-4 text-[8px]">
-          <span className="text-[var(--accent-success)]">[ BUY ]</span>
-          <span className="text-[var(--accent-secondary)]">[ MIX ]</span>
-          <span className="text-[var(--accent-warning)]">[ SELL ]</span>
-        </div>
+      <div className="title-sub text-[10px] text-[var(--accent-primary)] animate-blink">
+        PRESS START
       </div>
 
-      <p className="text-[10px] text-[var(--text-muted)] max-w-md leading-relaxed">
-        Mix chemicals. Trade materials. Build your empire in the chemical factory.
-      </p>
+      <div className="title-menu flex flex-col gap-3 w-64">
+        <Link href="/register" className="pixel-btn pixel-btn--primary w-full hover-lift hover-glow-teal">
+          [ NEW GAME ]
+        </Link>
+        <Link href="/login" className="pixel-btn w-full hover-lift">
+          [ CONTINUE ]
+        </Link>
+      </div>
 
-      <div className="flex gap-4">
-        <Link
-          href="/register"
-          className="pixel-btn pixel-btn--primary hover-lift hover-glow-teal"
-        >
-          {"[ GET STARTED ]"}
-        </Link>
-        <Link
-          href="/login"
-          className="pixel-btn hover-lift"
-        >
-          {"[ SIGN IN ]"}
-        </Link>
+      <div className="title-sub text-[7px] text-[var(--text-muted)] text-center max-w-xs leading-relaxed">
+        MIX CHEMICALS · TRADE MATERIALS · BUILD YOUR EMPIRE
       </div>
     </div>
   );
