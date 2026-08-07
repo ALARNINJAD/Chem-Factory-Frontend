@@ -9,17 +9,16 @@ import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
 import { sfx } from "@/lib/sfx";
 import { MachineCard } from "@/components/factory/machine-card";
-import { GameModal } from "@/components/factory/game-modal";
 import { DiscoveryModal } from "@/components/factory/discovery-modal";
-import { MixModal } from "@/components/factory/mix-modal";
 import { ShopStation } from "@/components/factory/station-shop";
 import { MarketStation } from "@/components/factory/station-market";
 import { StorageStation } from "@/components/factory/station-storage";
+import { MixStation } from "@/components/factory/station-mixer";
 import type { MixerEntry } from "@/lib/types";
 
 gsap.registerPlugin(useGSAP);
 
-type StationId = "shop" | "storage" | "market";
+type StationId = "shop" | "storage" | "market" | "mixer";
 
 const STATIONS: Array<{
   id: StationId;
@@ -31,6 +30,7 @@ const STATIONS: Array<{
   { id: "shop", label: "SHOP", sub: "BUY RAW MATERIALS", icon: "Item_126.png", color: "amber" },
   { id: "storage", label: "STORAGE", sub: "YOUR STOCK", icon: "Item_174.png", color: "teal" },
   { id: "market", label: "MARKET", sub: "TRADE WITH PLAYERS", icon: "Item_172.png", color: "purple" },
+  { id: "mixer", label: "MIXER", sub: "COMBINE MATERIALS", icon: "Item_487.png", color: "purple" },
 ];
 
 export default function FactoryFloorPage() {
@@ -44,7 +44,6 @@ export default function FactoryFloorPage() {
   const prevLevel = useRef<number | null>(null);
   const [station, setStation] = useState<StationId | null>(null);
   const [discoveryMix, setDiscoveryMix] = useState<MixerEntry | null>(null);
-  const [mixOpen, setMixOpen] = useState(false);
   const [collected, setCollected] = useState<{ name: string; amount: number } | null>(null);
 
   useEffect(() => {
@@ -190,7 +189,10 @@ export default function FactoryFloorPage() {
             {"<"}MIXING MACHINES{">"}
           </h2>
           <button
-            onClick={() => setMixOpen(true)}
+            onClick={() => {
+              sfx.click();
+              setStation("mixer");
+            }}
             className="text-[7px] text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors"
           >
             [+ NEW MIX]
@@ -226,7 +228,7 @@ export default function FactoryFloorPage() {
         <h2 className="text-[10px] text-[var(--text-secondary)] mb-2">
           {"<"}FACTORY STATIONS{">"}
         </h2>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {STATIONS.map((s) => {
             const active = station === s.id;
             return (
@@ -235,7 +237,7 @@ export default function FactoryFloorPage() {
                 className={`station-tile pixel-panel flex flex-col items-center py-4 hover-lift ${active ? "station-tile--active" : ""}`}
                 onClick={() => {
                   sfx.click();
-                  setStation(s.id);
+                  setStation(active ? null : s.id);
                 }}
               >
                 <div className="station-icon mb-2 sprite-slot">
@@ -245,27 +247,42 @@ export default function FactoryFloorPage() {
                 <div className="text-[9px] text-[var(--text-secondary)]">[{s.label}]</div>
                 <div className="text-[6px] text-[var(--text-muted)] mt-1">{s.sub}</div>
                 <div className="text-[6px] text-[var(--accent-primary)] mt-1">
-                  [OPEN]
+                  {active ? "[CLOSE]" : "[OPEN]"}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* Station panels */}
+      {station === "shop" && (
+        <div className="pixel-panel">
+          <h3 className="text-[9px] text-[var(--accent-warning)] mb-3">{"<"}SHOP{">"}</h3>
+          <ShopStation items={shopItems} />
+        </div>
+      )}
+      {station === "storage" && (
+        <div className="pixel-panel">
+          <h3 className="text-[9px] text-[var(--accent-primary)] mb-3">{"<"}STORAGE{">"}</h3>
+          <StorageStation inventory={inventory} />
+        </div>
+      )}
+      {station === "market" && (
+        <div className="pixel-panel">
+          <h3 className="text-[9px] text-[var(--accent-secondary)] mb-3">{"<"}MARKET{">"}</h3>
+          <MarketStation playerItems={playerItems} />
+        </div>
+      )}
+      {station === "mixer" && (
+        <div className="pixel-panel">
+          <h3 className="text-[9px] text-[var(--accent-secondary)] mb-3">{"<"}MIXER{">"}</h3>
+          <MixStation />
+        </div>
+      )}
       </div>
 
-      <MixModal open={mixOpen} onClose={() => setMixOpen(false)} />
       <DiscoveryModal key={discoveryMix?.id ?? "none"} mix={discoveryMix} onDone={() => setDiscoveryMix(null)} />
-
-      <GameModal open={station === "shop"} title="SHOP" tone="amber" onClose={() => setStation(null)}>
-        <ShopStation items={shopItems} />
-      </GameModal>
-      <GameModal open={station === "storage"} title="STORAGE" tone="teal" onClose={() => setStation(null)}>
-        <StorageStation inventory={inventory} />
-      </GameModal>
-      <GameModal open={station === "market"} title="MARKET" tone="purple" wide onClose={() => setStation(null)}>
-        <MarketStation playerItems={playerItems} />
-      </GameModal>
 
       {/* Level up banner */}
       <div
