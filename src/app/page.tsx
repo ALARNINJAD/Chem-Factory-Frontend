@@ -46,7 +46,7 @@ export default function Home() {
       <img src="/logo.png" alt="Chem Factory" className="title-logo max-w-xs sm:max-w-sm w-full" />
 
       <div className="title-sub text-[8px] text-[var(--text-muted)] tracking-widest text-center">
-        ::: INDUSTRIAL CHEMISTRY SIMULATOR :::
+        A GAME TO DISCOVER NEW MATERIALS
       </div>
 
       <div className="title-menu flex flex-col gap-3 w-64">
