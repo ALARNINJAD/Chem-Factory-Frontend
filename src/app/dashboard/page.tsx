@@ -2,16 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useAuth } from "@/lib/auth-context";
 import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
-import { MaterialIcon } from "@/components/material-icon";
 import { MachineCard } from "@/components/factory/machine-card";
 import { DiscoveryModal } from "@/components/factory/discovery-modal";
-import type { MixerEntry, InventoryItem, MarketItem } from "@/lib/types";
+import { MixModal } from "@/components/factory/mix-modal";
+import { ShopStation } from "@/components/factory/station-shop";
+import { MarketStation } from "@/components/factory/station-market";
+import { StorageStation } from "@/components/factory/station-storage";
+import type { MixerEntry } from "@/lib/types";
 
 gsap.registerPlugin(useGSAP);
 
@@ -38,6 +40,7 @@ export default function FactoryFloorPage() {
   const xpRef = useRef<HTMLDivElement>(null);
   const [station, setStation] = useState<StationId | null>(null);
   const [discoveryMix, setDiscoveryMix] = useState<MixerEntry | null>(null);
+  const [mixOpen, setMixOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -146,9 +149,12 @@ export default function FactoryFloorPage() {
           <h2 className="text-[10px] text-[var(--accent-secondary)]">
             {"<"}MIXING MACHINES{">"}
           </h2>
-          <Link href="/mixer" className="text-[7px] text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors">
+          <button
+            onClick={() => setMixOpen(true)}
+            className="text-[7px] text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors"
+          >
             [+ NEW MIX]
-          </Link>
+          </button>
         </div>
         {mixes.length === 0 ? (
           <div className="machine-wrap pixel-panel pixel-panel--inset text-center py-8">
@@ -202,110 +208,27 @@ export default function FactoryFloorPage() {
       </div>
 
       {/* Station panels */}
-      {station && (
-        <StationPanel
-          station={station}
-          shopItems={shopItems}
-          playerItems={playerItems}
-          inventory={inventory}
-        />
-      )}
-
-      <DiscoveryModal key={discoveryMix?.id ?? "none"} mix={discoveryMix} onDone={() => setDiscoveryMix(null)} />
-    </div>
-  );
-}
-
-function StationPanel({
-  station,
-  shopItems,
-  playerItems,
-  inventory,
-}: {
-  station: StationId;
-  shopItems: MarketItem[];
-  playerItems: MarketItem[];
-  inventory: InventoryItem[];
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useGSAP(
-    () => {
-      gsap.fromTo(ref.current, { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.3, ease: "power2.out" });
-    },
-    { dependencies: [station] }
-  );
-
-  const title = STATIONS.find((s) => s.id === station);
-
-  return (
-    <div ref={ref} className="pixel-panel">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[9px] text-[var(--accent-warning)]">
-          {"<"}{title?.label}{">"}
-        </h3>
-      </div>
-
-      {station === "storage" && (
-        <div>
-          {inventory.length === 0 ? (
-            <div className="pixel-panel pixel-panel--inset text-center py-6">
-              <p className="text-[8px] text-[var(--text-muted)]">EMPTY... VISIT THE SHOP</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {inventory.map((item) => (
-                <div key={item.material_id} className="pixel-panel pixel-panel--inset p-2 flex flex-col items-center gap-1">
-                  <MaterialIcon name={item.material_name} id={item.material_id} />
-                  <span className="text-[6px] text-[var(--text-secondary)]">{item.material_name}</span>
-                  <span className="text-[8px] text-[var(--accent-primary)]">x{item.amount}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {station === "shop" && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {shopItems.map((item) => (
-            <div key={item.material_id} className="pixel-panel pixel-panel--inset p-2 flex items-center gap-2">
-              <MaterialIcon name={item.material_name} id={item.material_id} size={28} />
-              <div className="min-w-0">
-                <div className="text-[7px] text-[var(--text-secondary)] truncate">{item.material_name}</div>
-                <div className="text-[8px] text-[var(--coin-gold)]">${item.price}</div>
-              </div>
-            </div>
-          ))}
+        <div className="pixel-panel">
+          <h3 className="text-[9px] text-[var(--accent-warning)] mb-3">{"<"}SHOP{">"}</h3>
+          <ShopStation items={shopItems} />
+        </div>
+      )}
+      {station === "storage" && (
+        <div className="pixel-panel">
+          <h3 className="text-[9px] text-[var(--accent-primary)] mb-3">{"<"}STORAGE{">"}</h3>
+          <StorageStation inventory={inventory} />
+        </div>
+      )}
+      {station === "market" && (
+        <div className="pixel-panel">
+          <h3 className="text-[9px] text-[var(--accent-secondary)] mb-3">{"<"}MARKET{">"}</h3>
+          <MarketStation playerItems={playerItems} />
         </div>
       )}
 
-      {station === "market" && (
-        <div>
-          {playerItems.length === 0 ? (
-            <div className="pixel-panel pixel-panel--inset text-center py-6">
-              <p className="text-[8px] text-[var(--text-muted)]">NO PLAYER LISTINGS...</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {playerItems.map((item) => (
-                <div key={item.material_id} className="pixel-panel pixel-panel--inset p-2 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <MaterialIcon name={item.material_name} id={item.material_id} size={26} />
-                    <div className="min-w-0">
-                      <div className="text-[7px] text-[var(--text-secondary)] truncate">{item.material_name}</div>
-                      <div className="text-[6px] text-[var(--text-muted)] truncate">SELLER: {item.username}</div>
-                    </div>
-                  </div>
-                  <span className="text-[8px] text-[var(--coin-gold)] whitespace-nowrap">
-                    ${item.price} x{item.amount}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <MixModal open={mixOpen} onClose={() => setMixOpen(false)} />
+      <DiscoveryModal key={discoveryMix?.id ?? "none"} mix={discoveryMix} onDone={() => setDiscoveryMix(null)} />
     </div>
   );
 }

@@ -114,6 +114,12 @@ body {
   transform: translate(1px, 1px);
 }
 
+.pixel-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .pixel-btn--primary {
   background: #1a5c4a;
   border-top-color: #2dd4aa;
