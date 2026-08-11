@@ -11,24 +11,17 @@ interface MaterialIconProps {
 }
 
 export function MaterialIcon({ name, id, size = 36, className }: MaterialIconProps) {
-  const [url, setUrl] = useState<string | null>(null);
-
+  // iconUrl is a cheap localStorage lookup — derive during render so the
+  // fallback sprite never flashes; the tick only re-renders when an icon
+  // override is changed elsewhere (icon picker in the discovery modal)
+  const [, setTick] = useState(0);
   useEffect(() => {
-    let cancelled = false;
-    const update = () => {
-      if (cancelled) return;
-      setUrl(iconUrl(name, id));
-    };
-    // defer to avoid a synchronous setState during the effect
-    const timer = setTimeout(update, 0);
+    const update = () => setTick((t) => t + 1);
     window.addEventListener("material-icons-changed", update);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      window.removeEventListener("material-icons-changed", update);
-    };
-  }, [name, id]);
+    return () => window.removeEventListener("material-icons-changed", update);
+  }, []);
 
+  const url = iconUrl(name, id);
   const slotStyle = { width: size, height: size };
 
   if (url) {

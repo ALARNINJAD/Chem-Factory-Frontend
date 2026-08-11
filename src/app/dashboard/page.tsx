@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { useAuth } from "@/lib/auth-context";
 import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
 import { sfx } from "@/lib/sfx";
+import { LEVEL_XP, SHOP_USERNAME } from "@/lib/constants";
 import { MachineCard } from "@/components/factory/machine-card";
 import { DiscoveryModal } from "@/components/factory/discovery-modal";
 import { ShopStation } from "@/components/factory/station-shop";
@@ -15,8 +15,6 @@ import { MarketStation } from "@/components/factory/station-market";
 import { StorageStation } from "@/components/factory/station-storage";
 import { MixStation } from "@/components/factory/station-mixer";
 import type { MixerEntry } from "@/lib/types";
-
-gsap.registerPlugin(useGSAP);
 
 type StationId = "shop" | "storage" | "market" | "mixer";
 
@@ -32,6 +30,10 @@ const STATIONS: Array<{
   { id: "market", label: "MARKET", sub: "TRADE WITH PLAYERS", icon: "Item_172.png", color: "purple" },
   { id: "mixer", label: "MIXER", sub: "COMBINE MATERIALS", icon: "Item_487.png", color: "purple" },
 ];
+
+function xpPct(xp: number): number {
+  return Math.min((xp / LEVEL_XP) * 100, 100);
+}
 
 export default function FactoryFloorPage() {
   const { isAuthenticated } = useAuth();
@@ -54,7 +56,9 @@ export default function FactoryFloorPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (prevLevel.current === null) {
+    // reseed when the logged-in player changes (login/logout) so a stale
+    // level-up animation can't play for a fresh session
+    if (prevLevel.current === null || user.level < prevLevel.current) {
       prevLevel.current = user.level;
       return;
     }
@@ -104,16 +108,27 @@ export default function FactoryFloorPage() {
   useGSAP(
     () => {
       if (xpRef.current && user) {
-        const pct = Math.min((user.xp / 1000) * 100, 100);
+        const pct = xpPct(user.xp);
         gsap.fromTo(xpRef.current, { width: "0%" }, { width: `${pct}%`, duration: 0.8, ease: "power2.out" });
       }
     },
     { dependencies: [user?.xp, user?.level], revertOnUpdate: true }
   );
 
-  const SHOP_USERNAME = "ADMIN HASTAM";
   const shopItems = market.filter((m) => m.username === SHOP_USERNAME);
   const playerItems = market.filter((m) => m.username !== SHOP_USERNAME);
+
+  // prefill-once via key: remounting MixStation with a fresh key lets the
+  // initializer seed the 1ST slot, while any local state the player edits
+  // afterwards stays theirs (never clobbered by re-renders)
+  const [mixPrefill, setMixPrefill] = useState<number | null>(null);
+  const mixerKey = mixPrefill ?? 0;
+
+  function openMixerFor(materialId: number) {
+    sfx.click();
+    setMixPrefill(materialId);
+    setStation("mixer");
+  }
 
   async function handleCollect(mix: MixerEntry) {
     try {
@@ -154,7 +169,7 @@ export default function FactoryFloorPage() {
     );
   }
 
-  const pct = user ? Math.min((user.xp / 1000) * 100, 100) : 0;
+  const pct = user ? xpPct(user.xp) : 0;
 
   return (
     <div className="floor-bg h-full overflow-y-auto page-enter" ref={floorRef}>
@@ -168,7 +183,7 @@ export default function FactoryFloorPage() {
         <div className="flex-1 max-w-xs">
           <div className="flex justify-between text-[7px] text-[var(--text-muted)] mb-1">
             <span>LVL {user?.level}</span>
-            <span>{user?.xp} / 1000 XP</span>
+            <span>{user?.xp} / {LEVEL_XP} XP</span>
           </div>
           <div className="pixel-progress">
             <div ref={xpRef} className="pixel-progress__fill" style={{ width: `${pct}%` }} />
@@ -189,12 +204,14 @@ export default function FactoryFloorPage() {
           <button
             onClick={() => {
               sfx.click();
+              setMixPrefill(null);
               setStation("mixer");
             }}
             className="text-[7px] text-[var(--text-muted)] hover:text-[var(--accent-secondary)] transition-colors"
           >
             [+ NEW MIX]
           </button>
+
         </div>
         {mixes.length === 0 ? (
           <div className="machine-wrap pixel-panel pixel-panel--inset text-center py-8">
@@ -263,7 +280,7 @@ export default function FactoryFloorPage() {
       {station === "storage" && (
         <div className="pixel-panel">
           <h3 className="text-[9px] text-[var(--accent-primary)] mb-3">{"<"}STORAGE{">"}</h3>
-          <StorageStation inventory={inventory} />
+          <StorageStation inventory={inventory} onMix={openMixerFor} />
         </div>
       )}
       {station === "market" && (
@@ -275,7 +292,7 @@ export default function FactoryFloorPage() {
       {station === "mixer" && (
         <div className="pixel-panel">
           <h3 className="text-[9px] text-[var(--accent-secondary)] mb-3">{"<"}MIXER{">"}</h3>
-          <MixStation />
+          <MixStation key={mixerKey} prefill={mixPrefill} />
         </div>
       )}
       </div>

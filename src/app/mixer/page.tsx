@@ -1,551 +1,74 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense, type FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { api } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
-import { useIsClient } from "@/lib/use-is-client";
+import { useState } from "react";
+import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
-import { MaterialIcon } from "@/components/material-icon";
-import { CURATED_ICONS, getIconOverride, setIconOverride, clearIconOverride } from "@/lib/icons";
-import type { InventoryItem, MixerEntry } from "@/lib/types";
+import { sfx } from "@/lib/sfx";
+import { MachineCard } from "@/components/factory/machine-card";
+import { DiscoveryModal } from "@/components/factory/discovery-modal";
+import { MixStation } from "@/components/factory/station-mixer";
+import type { MixerEntry } from "@/lib/types";
 
-function MixerPageContent({
-  initialFirst,
-  initialSecond,
-}: {
-  initialFirst: number;
-  initialSecond: number;
-}) {
-  const { token, isAuthenticated } = useAuth();
-  const router = useRouter();
+export default function MixerPage() {
+  const { mixes, pick, mixTotal } = useGame();
   const { toast } = useToast();
-  const isClient = useIsClient();
+  const [discoveryMix, setDiscoveryMix] = useState<MixerEntry | null>(null);
 
-  // my mixes
-  const [mixes, setMixes] = useState<MixerEntry[]>([]);
-  const [mixesLoading, setMixesLoading] = useState(true);
-
-  // known materials (from the user's inventory, for pickers)
-  const [materials, setMaterials] = useState<InventoryItem[]>([]);
-  const [materialsLoading, setMaterialsLoading] = useState(true);
-
-  // add to mixer
-  const [addFirst, setAddFirst] = useState(initialFirst);
-  const [addSecond, setAddSecond] = useState(initialSecond);
-  const [addAmount, setAddAmount] = useState(0);
-
-  // check time
-  const [checkId, setCheckId] = useState(0);
-  const [checkResult, setCheckResult] = useState<MixerEntry | null>(null);
-
-  // pick mix
-  const [pickId, setPickId] = useState(0);
-
-  // pick new mix
-  const [newId, setNewId] = useState(0);
-  const [newName, setNewName] = useState("");
-  const [newPrice, setNewPrice] = useState(0);
-  const [newMixTime, setNewMixTime] = useState(0);
-  const [newIcon, setNewIcon] = useState("");
-
-  const fetchMixes = useCallback(async (token: string) => api.mixer.mixes(token), []);
-  const fetchInventory = useCallback(async (token: string) => api.inventory.export(token), []);
-
-  const refreshMixes = useCallback(async () => {
-    if (!token) return;
+  async function handleCollect(mix: MixerEntry) {
     try {
-      setMixes(await fetchMixes(token));
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "COULD NOT LOAD MIXES", "error");
-    }
-  }, [token, fetchMixes, toast]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-    let cancelled = false;
-    async function load() {
-      try {
-        const inventoryData = await fetchInventory(token!);
-        if (!cancelled) setMaterials(inventoryData);
-      } catch (err) {
-        if (!cancelled) {
-          toast(err instanceof Error ? err.message : "COULD NOT LOAD MATERIALS", "error");
-        }
-      } finally {
-        if (!cancelled) setMaterialsLoading(false);
-      }
-      try {
-        const mixData = await fetchMixes(token!);
-        if (!cancelled) setMixes(mixData);
-      } catch (err) {
-        if (!cancelled) {
-          setMixes([]);
-          toast(err instanceof Error ? err.message : "COULD NOT LOAD MIXES", "error");
-        }
-      } finally {
-        if (!cancelled) setMixesLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, token, router, fetchMixes, fetchInventory, toast]);
-
-  if (!isClient) return null;
-
-  const knownMaterials = Array.from(
-    new Map(materials.map((m) => [m.material_id, m])).values()
-  );
-  const firstMaterial = knownMaterials.find((m) => m.material_id === addFirst);
-  const secondMaterial = knownMaterials.find((m) => m.material_id === addSecond);
-  const maxAmount = Math.min(
-    10,
-    firstMaterial?.amount ?? 10,
-    secondMaterial?.amount ?? 10
-  );
-
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    if (!token) return;
-    if (addFirst === 0 || addSecond === 0 || addAmount <= 0) {
-      toast("SELECT TWO INGREDIENTS AND AN AMOUNT", "error");
-      return;
-    }
-    if (
-      mixes.some(
-        (m) =>
-          (m.first_ingredient_id === addFirst && m.second_ingredient_id === addSecond) ||
-          (m.first_ingredient_id === addSecond && m.second_ingredient_id === addFirst)
-      )
-    ) {
-      toast("ALREADY MIXING THESE INGREDIENTS", "error");
-      return;
-    }
-    try {
-      await api.mixer.add(token, { first_ingredient_id: addFirst, second_ingredient_id: addSecond, amount: addAmount });
-      toast("ADDED TO MIXER!", "success");
-      refreshMixes();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "FAILED", "error");
-    }
-  }
-
-  async function checkMix(id: number) {
-    if (!token) return;
-    try {
-      const res = await api.mixer.checkTime(token, { id });
-      setCheckResult(res);
-    } catch (err) {
-      setCheckResult(null);
-      toast(err instanceof Error ? err.message : "FAILED", "error");
-    }
-  }
-
-  async function handleCheckTime(e: FormEvent) {
-    e.preventDefault();
-    await checkMix(checkId);
-  }
-
-  async function pickMix(id: number) {
-    if (!token) return;
-    try {
-      const res = await api.mixer.pick(token, { id });
+      const res = await pick(mix.id);
       if (res.is_new) {
-        setNewId(id);
-        toast("NEW COMBO! NAME THE MATERIAL", "info");
-      } else if (res.remaining_seconds > 0) {
-        toast(`NOT READY YET — ${res.remaining_seconds}s LEFT`, "info");
+        setDiscoveryMix(mix);
       } else {
-        toast("MIX PICKED!", "success");
+        sfx.collect();
+        toast("MATERIAL COLLECTED!", "success");
       }
-      refreshMixes();
     } catch (err) {
-      toast(err instanceof Error ? err.message : "FAILED", "error");
+      toast(err instanceof Error ? err.message : "COULD NOT COLLECT", "error");
     }
-  }
-
-  async function handlePick(e: FormEvent) {
-    e.preventDefault();
-    await pickMix(pickId);
-  }
-
-  async function handlePickNew(e: FormEvent) {
-    e.preventDefault();
-    if (!token) return;
-    try {
-      await api.mixer.pickNew(token, { id: newId, name: newName, price: newPrice, mix_time: newMixTime });
-      if (newIcon && newName) {
-        setIconOverride(newName, newIcon);
-      }
-      toast("NEW MIX CREATED!", "success");
-      refreshMixes();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "FAILED", "error");
-    }
-  }
-
-  function startName(mix: MixerEntry) {
-    const fallbackName = `${mix.first_ingredient_name}+${mix.second_ingredient_name}`;
-    const name = mix.material_name || fallbackName;
-    setNewId(mix.id);
-    setNewName(name);
-    setNewPrice(0);
-    setNewMixTime(0);
-    setNewIcon(getIconOverride(name) ?? "");
-  }
-
-  function swapIngredients() {
-    setAddFirst(addSecond);
-    setAddSecond(addFirst);
-  }
-
-  function renderIngredientSelect(
-    label: string,
-    value: number,
-    onChange: (v: number) => void
-  ) {
-    const known = Array.from(
-      new Map(materials.map((m) => [m.material_id, m])).values()
-    );
-    const selected = known.find((m) => m.material_id === value);
-    return (
-      <div>
-        <label className="text-[8px] text-[var(--text-muted)] mb-1 block">{label}</label>
-        <div className="flex items-center gap-2">
-          <MaterialIcon name={selected?.material_name} id={selected?.material_id} size={24} />
-          <select
-            className="pixel-input w-full flex-1"
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-          >
-            <option value={0}>-- select material --</option>
-            {known.map((m) => (
-              <option key={m.material_id} value={m.material_id}>
-                #{m.material_id} {m.material_name} (x{m.amount})
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-6 max-w-5xl mx-auto page-enter">
       <h1 className="text-sm text-[var(--accent-secondary)]">
         {"<"}MIXER{">"}
       </h1>
-
-      {/* Mixer visualization */}
-      <div className="pixel-panel text-center py-6">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <div className="animate-float">
-            <MaterialIcon name={firstMaterial?.material_name} id={firstMaterial?.material_id} />
-          </div>
-          <span className="text-[var(--accent-secondary)] text-lg">+</span>
-          <div className="animate-float" style={{ animationDelay: "0.5s" }}>
-            <MaterialIcon name={secondMaterial?.material_name} id={secondMaterial?.material_id} />
-          </div>
-          <span className="text-[var(--accent-secondary)] text-lg">=</span>
-          {addFirst > 0 && addSecond > 0 ? (
-            <div className="sprite-slot animate-pulse-glow">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/items/Item_487.png" alt="result" className="pixel-sprite-img" />
-            </div>
-          ) : (
-            <div className="sprite-slot animate-pulse-glow">
-              <span className="pixel-sprite pixel-sprite--crystal" />
-            </div>
-          )}
-        </div>
-        <div className="text-[8px] text-[var(--text-muted)]">
-          COMBINE TWO INGREDIENTS TO CREATE NEW MATERIALS
-        </div>
-      </div>
 
       {/* My Mixes */}
       <div className="pixel-panel hover-glow-purple">
         <h2 className="text-[10px] text-[var(--accent-secondary)] mb-3">
           {"<"}MY MIXES{">"}
         </h2>
-        {mixesLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="pixel-skeleton pixel-skeleton--text" />
-            ))}
-          </div>
-        ) : mixes.length === 0 ? (
+        {mixes.length === 0 ? (
           <div className="pixel-panel pixel-panel--inset text-center py-6">
             <p className="text-[8px] text-[var(--text-muted)]">
               NO ACTIVE MIXES... START ONE BELOW
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {mixes.map((mix) => (
-              <div key={mix.id} className="pixel-panel pixel-panel--inset p-2">
-                <div className="flex items-center gap-2 text-[8px] text-[var(--text-secondary)]">
-                  <MaterialIcon name={mix.first_ingredient_name} id={mix.first_ingredient_id} size={22} />
-                  <span className="text-[var(--text-muted)]">+</span>
-                  <MaterialIcon name={mix.second_ingredient_name} id={mix.second_ingredient_id} size={22} />
-                  <span className="text-[var(--text-muted)]">=</span>
-                  <MaterialIcon name={mix.material_name || undefined} id={mix.id} size={22} />
-                  <span className="flex-1 min-w-0">
-                    <span className="text-[var(--text-muted)]">#{mix.id}</span>{" "}
-                    {mix.first_ingredient_name} + {mix.second_ingredient_name}
-                    {" = "}
-                    {mix.is_new ? (
-                      <span className="text-[var(--accent-warning)]">[NEW!]</span>
-                    ) : (
-                      mix.material_name || "[UNKNOWN]"
-                    )}
-                  </span>
-                  <span className="text-[var(--text-muted)] whitespace-nowrap">
-                    QTY: {mix.amount} | {mix.remaining_seconds}s LEFT
-                  </span>
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => checkMix(mix.id)}
-                    className="pixel-btn text-[8px] hover-lift"
-                  >
-                    [CHECK]
-                  </button>
-                  {mix.is_new ? (
-                    <button
-                      onClick={() => startName(mix)}
-                      className="pixel-btn pixel-btn--warning text-[8px] hover-lift"
-                    >
-                      [NAME MATERIAL]
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => pickMix(mix.id)}
-                      className="pixel-btn pixel-btn--success text-[8px] hover-lift"
-                    >
-                      [PICK]
-                    </button>
-                  )}
-                </div>
-              </div>
+              <MachineCard
+                key={mix.id}
+                mix={mix}
+                totalEstimate={mixTotal(mix.id)}
+                onCollect={() => handleCollect(mix)}
+                onName={() => setDiscoveryMix(mix)}
+              />
             ))}
           </div>
         )}
       </div>
 
-      {/* Add to Mixer */}
+      {/* Start a mix */}
       <div className="pixel-panel hover-glow-purple">
         <h2 className="text-[10px] text-[var(--accent-secondary)] mb-3">
           {"<"}ADD TO MIXER{">"}
         </h2>
-        {materialsLoading ? (
-          <div className="space-y-2">
-            <div className="pixel-skeleton pixel-skeleton--text" />
-            <div className="pixel-skeleton pixel-skeleton--text" />
-            <div className="pixel-skeleton pixel-skeleton--text" style={{ width: "40%" }} />
-          </div>
-        ) : (
-          <form onSubmit={handleAdd} className="space-y-3">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
-              {renderIngredientSelect("FIRST INGREDIENT", addFirst, setAddFirst)}
-              <button
-                type="button"
-                onClick={swapIngredients}
-                className="pixel-btn text-[8px] mb-0.5 hover-lift"
-                title="swap"
-              >
-                {"<=>"}
-              </button>
-              {renderIngredientSelect("SECOND INGREDIENT", addSecond, setAddSecond)}
-            </div>
-            <div>
-              <label className="text-[8px] text-[var(--text-muted)] mb-1 block">AMOUNT (1-{maxAmount})</label>
-              <input
-                type="number"
-                min={1}
-                max={maxAmount}
-                placeholder="amount..."
-                value={addAmount}
-                onChange={(e) => setAddAmount(Number(e.target.value))}
-                className="pixel-input"
-              />
-            </div>
-            <button type="submit" className="pixel-btn pixel-btn--primary w-full hover-lift">
-              [ADD]
-            </button>
-          </form>
-        )}
+        <MixStation />
       </div>
 
-      {/* Check Time */}
-      <div className="pixel-panel hover-glow-teal">
-        <h2 className="text-[10px] text-[var(--accent-info)] mb-3">
-          {"<"}CHECK MIX TIME{">"}
-        </h2>
-        <form onSubmit={handleCheckTime} className="space-y-3">
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">MIXER ENTRY ID</label>
-            <input
-              type="number"
-              placeholder="entry id..."
-              value={checkId}
-              onChange={(e) => setCheckId(Number(e.target.value))}
-              className="pixel-input"
-            />
-          </div>
-          <button type="submit" className="pixel-btn w-full hover-lift">
-            [CHECK]
-          </button>
-        </form>
-        {checkResult && (
-          <div className="pixel-panel pixel-panel--inset text-[var(--accent-info)] text-[8px] p-2 mt-3 space-y-1">
-            <div>{">"} {checkResult.first_ingredient_name} + {checkResult.second_ingredient_name} = {checkResult.material_name || "[NEW!]"}</div>
-            <div>{">"} QTY: {checkResult.amount}</div>
-            <div>{">"} REMAINING: {checkResult.remaining_seconds}s</div>
-          </div>
-        )}
-      </div>
-
-      {/* Pick Mix */}
-      <div className="pixel-panel hover-glow-teal">
-        <h2 className="text-[10px] text-[var(--accent-success)] mb-3">
-          {"<"}PICK MIX{">"}
-        </h2>
-        <form onSubmit={handlePick} className="space-y-3">
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">MIXER ENTRY ID</label>
-            <input
-              type="number"
-              placeholder="entry id..."
-              value={pickId}
-              onChange={(e) => setPickId(Number(e.target.value))}
-              className="pixel-input"
-            />
-          </div>
-          <button type="submit" className="pixel-btn pixel-btn--success w-full hover-lift">
-            [PICK]
-          </button>
-        </form>
-      </div>
-
-      {/* Create New Mix */}
-      <div className="pixel-panel hover-glow-amber">
-        <h2 className="text-[10px] text-[var(--accent-warning)] mb-3">
-          {"<"}CREATE NEW MIX{">"}
-        </h2>
-        <form onSubmit={handlePickNew} className="space-y-3">
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">MIXER ENTRY ID</label>
-            <input
-              type="number"
-              placeholder="entry id..."
-              value={newId}
-              onChange={(e) => setNewId(Number(e.target.value))}
-              className="pixel-input"
-            />
-          </div>
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">NAME</label>
-            <input
-              type="text"
-              placeholder="material name..."
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="pixel-input"
-            />
-          </div>
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">PRICE</label>
-            <input
-              type="number"
-              placeholder="price..."
-              value={newPrice}
-              onChange={(e) => setNewPrice(Number(e.target.value))}
-              className="pixel-input"
-            />
-          </div>
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">MIX TIME (SECONDS)</label>
-            <input
-              type="number"
-              placeholder="mix time..."
-              value={newMixTime}
-              onChange={(e) => setNewMixTime(Number(e.target.value))}
-              className="pixel-input"
-            />
-          </div>
-          <div>
-            <label className="text-[8px] text-[var(--text-muted)] mb-1 block">ICON (optional)</label>
-            <div className="flex items-center gap-2 mb-2">
-              {newIcon ? (
-                <div className="sprite-slot">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`/items/${newIcon}`} alt="preview" className="pixel-sprite-img" />
-                </div>
-              ) : (
-                <MaterialIcon name={newName} id={newId} size={36} />
-              )}
-              <span className="text-[7px] text-[var(--text-muted)]">PREVIEW</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setNewIcon("");
-                  if (newName) clearIconOverride(newName);
-                }}
-                className="pixel-btn text-[8px] ml-auto hover-lift"
-              >
-                [DEFAULT]
-              </button>
-            </div>
-            <div className="pixel-panel pixel-panel--inset p-2 grid grid-cols-8 sm:grid-cols-10 max-h-40 overflow-y-auto gap-1">
-              {CURATED_ICONS.map((file) => {
-                const active = file === newIcon;
-                return (
-                  <button
-                    key={file}
-                    type="button"
-                    title={file}
-                    onClick={() => setNewIcon(active ? "" : file)}
-                    className={`pixel-sprite-pick ${active ? "pixel-sprite-pick--active" : ""}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/items/${file}`} alt={file} className="pixel-sprite-img" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <button type="submit" className="pixel-btn pixel-btn--warning w-full hover-lift">
-            [CREATE]
-          </button>
-        </form>
-      </div>
+      <DiscoveryModal key={discoveryMix?.id ?? "none"} mix={discoveryMix} onDone={() => setDiscoveryMix(null)} />
     </div>
-  );
-}
-
-function MixerPageInner() {
-  const searchParams = useSearchParams();
-  const first = Number(searchParams.get("first")) || 0;
-  const second = Number(searchParams.get("second")) || 0;
-  return (
-    <MixerPageContent
-      key={searchParams.toString()}
-      initialFirst={first}
-      initialSecond={second}
-    />
-  );
-}
-
-export default function MixerPage() {
-  return (
-    <Suspense fallback={null}>
-      <MixerPageInner />
-    </Suspense>
   );
 }

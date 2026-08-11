@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense, type FormEvent } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/toast";
+import { sfx } from "@/lib/sfx";
+import { QtyStepper } from "@/components/factory/qty-stepper";
 import { MaterialIcon } from "@/components/material-icon";
 import type { MarketItem, InventoryItem } from "@/lib/types";
 
@@ -25,35 +27,17 @@ function MarketPageContent({
 
   // sell form
   const [sellMaterialId, setSellMaterialId] = useState(initialMaterialId);
-  const [sellAmount, setSellAmount] = useState(0);
+  const [sellAmount, setSellAmount] = useState(1);
 
-  // buy form
-  const [buyMarketId, setBuyMarketId] = useState(0);
-  const [buyAmount, setBuyAmount] = useState(0);
+  // buy panel
+  const [buyItem, setBuyItem] = useState<MarketItem | null>(null);
+  const [buyAmount, setBuyAmount] = useState(1);
+  const [buyBusy, setBuyBusy] = useState(false);
 
-  const ownedAmount =
-    inv.find((i) => i.material_id === sellMaterialId)?.amount ?? 0;
+  const ownedAmount = inv.find((i) => i.material_id === sellMaterialId)?.amount ?? 0;
 
   const fetchMarket = useCallback(async (token: string) => api.market.export(token), []);
   const fetchInventory = useCallback(async (token: string) => api.inventory.export(token), []);
-
-  const refreshMarket = useCallback(async () => {
-    if (!token) return;
-    try {
-      setItems(await fetchMarket(token));
-    } catch {
-      // ignore
-    }
-  }, [token, fetchMarket]);
-
-  const refreshInventory = useCallback(async () => {
-    if (!token) return;
-    try {
-      setInv(await fetchInventory(token));
-    } catch {
-      // ignore
-    }
-  }, [token, fetchInventory]);
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
@@ -83,8 +67,7 @@ function MarketPageContent({
     };
   }, [isAuthenticated, token, router, fetchMarket, fetchInventory]);
 
-  async function handleSell(e: FormEvent) {
-    e.preventDefault();
+  async function handleSell() {
     if (!token) return;
     if (sellMaterialId === 0 || sellAmount <= 0) {
       toast("SELECT A MATERIAL AND AMOUNT", "error");
@@ -96,25 +79,33 @@ function MarketPageContent({
     }
     try {
       await api.market.sell(token, { material_id: sellMaterialId, amount: sellAmount });
+      sfx.sell();
       toast("LISTED FOR SALE!", "success");
-      refreshMarket();
-      refreshInventory();
+      setInv(await fetchInventory(token));
+      setItems(await fetchMarket(token));
     } catch (err) {
       toast(err instanceof Error ? err.message : "FAILED", "error");
     }
   }
 
-  async function handleBuy(e: FormEvent) {
-    e.preventDefault();
-    if (!token) return;
+  async function handleBuy() {
+    if (!token || !buyItem) return;
+    setBuyBusy(true);
     try {
-      await api.market.buy(token, { market_id: buyMarketId, amount: buyAmount });
-      toast("PURCHASE COMPLETE!", "success");
-      refreshMarket();
+      await api.market.buy(token, { market_id: buyItem.id, amount: buyAmount });
+      sfx.buy();
+      toast(`BOUGHT ${buyAmount}x ${buyItem.material_name.toUpperCase()}!`, "success");
+      setBuyItem(null);
+      setInv(await fetchInventory(token));
+      setItems(await fetchMarket(token));
     } catch (err) {
-      toast(err instanceof Error ? err.message : "FAILED", "error");
+      toast(err instanceof Error ? err.message : "BUY FAILED", "error");
+    } finally {
+      setBuyBusy(false);
     }
   }
+
+  const buyTotal = buyItem ? buyItem.price * buyAmount : 0;
 
   return (
     <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-4 max-w-5xl mx-auto page-enter">
@@ -163,7 +154,7 @@ function MarketPageContent({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-3">
               {items.map((item) => (
                 <div key={item.id} className="pixel-panel hover-lift hover-glow-amber">
                   <div className="flex items-start justify-between mb-2">
@@ -188,9 +179,8 @@ function MarketPageContent({
                     </span>
                     <button
                       onClick={() => {
-                        setBuyMarketId(item.id);
-                        setBuyAmount(item.amount);
-                        setTab("sell");
+                        setBuyItem(item);
+                        setBuyAmount(1);
                       }}
                       className="pixel-btn pixel-btn--success text-[8px] hover-lift"
                     >
@@ -207,25 +197,24 @@ function MarketPageContent({
       {/* Sell Tab */}
       {tab === "sell" && (
         <div className="space-y-6">
-          {/* Sell Form */}
           <div className="pixel-panel">
             <h2 className="text-[10px] text-[var(--accent-warning)] mb-3">
               {"<"}LIST MATERIAL{">"}
             </h2>
-            <form onSubmit={handleSell} className="space-y-3">
-              <div>
-                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">SELECT FROM INVENTORY</label>
-                {inv.length === 0 ? (
-                  <p className="pixel-input text-[8px] flex items-center text-[var(--text-muted)]">
-                    YOUR INVENTORY IS EMPTY...
-                  </p>
-                ) : (
+            {inv.length === 0 ? (
+              <p className="pixel-input text-[8px] flex items-center text-[var(--text-muted)]">
+                YOUR INVENTORY IS EMPTY...
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[8px] text-[var(--text-muted)] mb-1 block">SELECT FROM INVENTORY</label>
                   <select
                     className="pixel-input w-full"
                     value={sellMaterialId}
                     onChange={(e) => {
                       setSellMaterialId(Number(e.target.value));
-                      setSellAmount(0);
+                      setSellAmount(1);
                     }}
                   >
                     <option value={0}>-- select material --</option>
@@ -235,73 +224,75 @@ function MarketPageContent({
                       </option>
                     ))}
                   </select>
-                )}
-              </div>
-              <div>
-                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">AMOUNT</label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    max={ownedAmount || undefined}
-                    placeholder="amount..."
-                    value={sellAmount}
-                    onChange={(e) => setSellAmount(Number(e.target.value))}
-                    className="pixel-input flex-1"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setSellAmount(ownedAmount)}
-                    className="pixel-btn text-[8px] hover-lift"
-                  >
-                    [MAX]
-                  </button>
                 </div>
-                {ownedAmount > 0 && (
-                  <p className="text-[7px] text-[var(--text-muted)] mt-1">
-                    YOU OWN: {ownedAmount}
-                  </p>
+                {sellMaterialId !== 0 && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[7px] text-[var(--text-muted)]">QTY</span>
+                        <QtyStepper
+                          value={sellAmount}
+                          onChange={setSellAmount}
+                          max={Math.max(1, ownedAmount)}
+                          size="sm"
+                        />
+                      </div>
+                      <button
+                        onClick={handleSell}
+                        className="pixel-btn pixel-btn--warning text-[8px] hover-lift"
+                      >
+                        [LIST FOR SALE]
+                      </button>
+                    </div>
+                    <p className="text-[7px] text-[var(--text-muted)]">
+                      YOU OWN: {ownedAmount} — PRICE IS DETERMINED BY THE MATERIAL
+                    </p>
+                  </>
                 )}
               </div>
-              <button type="submit" className="pixel-btn pixel-btn--warning w-full hover-lift">
-                [LIST FOR SALE]
-              </button>
-              <p className="text-[7px] text-[var(--text-muted)] text-center">
-                PRICE IS DETERMINED BY THE MATERIAL
-              </p>
-            </form>
+            )}
           </div>
+        </div>
+      )}
 
-          {/* Buy Form */}
-          <div className="pixel-panel">
-            <h2 className="text-[10px] text-[var(--accent-success)] mb-3">
-              {"<"}BUY MATERIAL{">"}
-            </h2>
-            <form onSubmit={handleBuy} className="space-y-3">
-              <div>
-                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">MARKET LISTING ID</label>
-                <input
-                  type="number"
-                  placeholder="market id..."
-                  value={buyMarketId}
-                  onChange={(e) => setBuyMarketId(Number(e.target.value))}
-                  className="pixel-input"
-                />
-              </div>
-              <div>
-                <label className="text-[8px] text-[var(--text-muted)] mb-1 block">AMOUNT</label>
-                <input
-                  type="number"
-                  placeholder="amount..."
-                  value={buyAmount}
-                  onChange={(e) => setBuyAmount(Number(e.target.value))}
-                  className="pixel-input"
-                />
-              </div>
-              <button type="submit" className="pixel-btn pixel-btn--success w-full hover-lift">
-                [BUY]
+      {/* Buy panel */}
+      {buyItem && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/75" onClick={() => !buyBusy && setBuyItem(null)} />
+          <div className="relative pixel-panel w-full max-w-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[10px] text-[var(--accent-success)]">{"<"}BUY MATERIAL{">"}</h2>
+              <button
+                onClick={() => !buyBusy && setBuyItem(null)}
+                className="text-[8px] text-[var(--text-muted)] hover:text-[var(--accent-danger)] transition-colors"
+              >
+                [CLOSE]
               </button>
-            </form>
+            </div>
+            <div className="pixel-panel pixel-panel--inset flex items-center gap-3 p-3 mb-3">
+              <MaterialIcon name={buyItem.material_name} id={buyItem.material_id} size={36} />
+              <div className="min-w-0 flex-1">
+                <div className="text-[8px] text-[var(--text-secondary)] truncate">{buyItem.material_name}</div>
+                <div className="text-[6px] text-[var(--text-muted)] truncate">SELLER: {buyItem.username}</div>
+                <div className="text-[8px] text-[var(--coin-gold)]">
+                  ${buyItem.price} <span className="text-[6px] text-[var(--text-muted)]">EACH</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[7px] text-[var(--text-muted)]">QTY</span>
+                <QtyStepper value={buyAmount} onChange={setBuyAmount} max={Math.min(10, buyItem.amount)} size="sm" />
+              </div>
+              <span className="text-[9px] text-[var(--coin-gold)]">TOTAL: ${buyTotal}</span>
+            </div>
+            <button
+              onClick={handleBuy}
+              disabled={buyBusy}
+              className="pixel-btn pixel-btn--success w-full hover-lift"
+            >
+              {buyBusy ? "[BUYING...]" : "[CONFIRM PURCHASE]"}
+            </button>
           </div>
         </div>
       )}

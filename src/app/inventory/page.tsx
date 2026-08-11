@@ -96,7 +96,7 @@ export default function InventoryPage() {
                   x{item.amount}
                 </span>
                 <Link
-                  href="/dashboard"
+                  href={`/market?sell=1&material_id=${item.material_id}`}
                   className="text-[7px] text-[var(--accent-warning)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   [TRADE]

@@ -9,6 +9,10 @@
 
 export type IconFile = string;
 
+// The "?" crystal used for unnamed/discovery results — the single place that
+// knows the filename instead of three hardcoded /items/Item_487.png spots.
+export const UNKNOWN_ICON: IconFile = "Item_487.png";
+
 export const CURATED_ICONS: IconFile[] = [
   "Item_109.png",
   "Item_11.png",
