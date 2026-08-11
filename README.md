@@ -89,20 +89,11 @@ cd Chem-Factory-Frontend
 
 # Install dependencies
 npm install
-
-# Copy environment configuration
-cp .env.local.example .env.local
 ```
 
 ### Configuration
 
-Edit `.env.local` with the URL of your backend API:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8090
-```
-
-The frontend also proxies `/api/*` requests to the backend via `next.config.ts` rewrites, so API calls stay relative and avoid CORS issues.
+No env vars are required. The frontend proxies `/api/*` requests to the backend via `next.config.ts` rewrites (pointing at `http://localhost:8090` by default) — API calls stay relative and avoid CORS issues. Edit the rewrite destination in `next.config.ts` if your backend runs elsewhere.
 
 ### Running the Application
 

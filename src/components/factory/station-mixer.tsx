@@ -42,11 +42,19 @@ function Slot({
   );
 }
 
-export function MixStation() {
+export function MixStation({ prefill }: { prefill?: number | null }) {
   const { inventory, mixes, addMix } = useGame();
   const { toast } = useToast();
-  const [picking, setPicking] = useState<1 | 2>(1);
-  const [first, setFirst] = useState<InventoryItem | null>(null);
+
+  // storage "MIX" quick-start: the dashboard remounts this station via key,
+  // so the initializer runs once and fills the 1ST slot with the picked
+  // material — the player then only has to choose the 2ND ingredient
+  const [first, setFirst] = useState<InventoryItem | null>(() => {
+    if (!prefill) return null;
+    const found = inventory.find((m) => m.material_id === prefill && m.amount > 0);
+    return found ?? null;
+  });
+  const [picking, setPicking] = useState<1 | 2>(first ? 2 : 1);
   const [second, setSecond] = useState<InventoryItem | null>(null);
   const [amount, setAmount] = useState(1);
   const [saving, setSaving] = useState(false);

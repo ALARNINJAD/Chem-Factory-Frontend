@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { User, InventoryItem, MarketItem, MixerEntry, PickResult } from "@/lib/types";
@@ -31,8 +31,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [mixes, setMixes] = useState<MixerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [totals, setTotals] = useState<Record<number, number>>({});
-  const loadedAtRef = useRef(0);
-  const [, setTick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const loadedAtRef = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -40,13 +40,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
       api.user.profile(token),
       api.inventory.export(token),
       api.market.export(token),
-      api.mixer.mixes(token).catch(() => []),
+      api.mixer.mixes(token).catch((err) => {
+        // don't leave the user staring at a stale "all idle" floor silently
+        console.error("failed to load mixes", err);
+        return [] as MixerEntry[];
+      }),
     ]);
     setUser(profile);
     setInventory(inv);
     setMarket(mk);
     setMixes(mx);
     loadedAtRef.current = Date.now();
+    setNow(loadedAtRef.current);
     setTotals((prev) => {
       const next = { ...prev };
       for (const m of mx) {
@@ -75,18 +80,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, token, refresh]);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      if (mixes.length > 0) setTick((t) => t + 1);
-    }, 500);
+    const id = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(id);
-  }, [mixes.length]);
+  }, []);
 
   const liveRemaining = useCallback(
     (mix: MixerEntry) => {
-      const elapsed = Math.floor((Date.now() - loadedAtRef.current) / 1000);
+      // before the first successful refresh the server snapshot is not anchored
+      // in time — return it untouched so cards don't flash "READY" on first paint
+      const anchor = loadedAtRef.current ?? mix.remaining_seconds * 1000;
+      const elapsed = Math.max(0, Math.floor((now - anchor) / 1000));
       return Math.max(0, mix.remaining_seconds - elapsed);
     },
-    []
+    [now]
   );
 
   const mixTotal = useCallback((id: number) => totals[id] ?? 1, [totals]);
@@ -124,7 +130,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const pick = useCallback(
     async (id: number) => {
-      if (!token) return Promise.resolve<PickResult>({ is_picked: false, is_new: false, remaining_seconds: 0 });
+      if (!token) throw new Error("NOT SIGNED IN");
       const res = await api.mixer.pick(token, { id });
       await refresh();
       return res;
@@ -141,13 +147,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     [token, refresh]
   );
 
-  return (
-    <GameContext.Provider
-      value={{ user, inventory, market, mixes, loading, refresh, buy, sell, addMix, pick, pickNew, liveRemaining, mixTotal }}
-    >
-      {children}
-    </GameContext.Provider>
+  const value = useMemo<GameStore>(
+    () => ({ user, inventory, market, mixes, loading, refresh, buy, sell, addMix, pick, pickNew, liveRemaining, mixTotal }),
+    [user, inventory, market, mixes, loading, refresh, buy, sell, addMix, pick, pickNew, liveRemaining, mixTotal]
   );
+
+  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 
 export function useGame() {

@@ -13,7 +13,7 @@ export function MarketStation({ playerItems }: { playerItems: MarketItem[] }) {
   const { toast } = useToast();
   const [buyQty, setBuyQty] = useState<Record<number, number>>({});
   const [buyBusy, setBuyBusy] = useState<number | null>(null);
-  const [sellMat, setSellMat] = useState(0);
+  const [sellMat, setSellMat] = useState<number | null>(null);
   const [sellAmt, setSellAmt] = useState(1);
   const [sellBusy, setSellBusy] = useState(false);
 
@@ -40,7 +40,7 @@ export function MarketStation({ playerItems }: { playerItems: MarketItem[] }) {
   }
 
   async function handleSell() {
-    if (sellMat === 0 || sellAmt <= 0) {
+    if (sellMat === null || sellAmt <= 0) {
       toast("SELECT A MATERIAL AND AMOUNT", "error");
       return;
     }
@@ -54,7 +54,7 @@ export function MarketStation({ playerItems }: { playerItems: MarketItem[] }) {
       sfx.sell();
       toast("LISTED FOR SALE!", "success");
       setSellAmt(1);
-      setSellMat(0);
+      setSellMat(null);
     } catch (err) {
       toast(err instanceof Error ? err.message : "SELL FAILED", "error");
     } finally {
@@ -114,7 +114,7 @@ export function MarketStation({ playerItems }: { playerItems: MarketItem[] }) {
                 id="market-sell-material"
                 aria-label="select material to sell"
                 className="pixel-input w-full"
-                value={sellMat}
+                value={sellMat ?? 0}
                 onChange={(e) => {
                   setSellMat(Number(e.target.value));
                   setSellAmt(1);

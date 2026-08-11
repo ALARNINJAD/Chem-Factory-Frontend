@@ -1,9 +1,20 @@
-import type { MixerEntry, MixerListResponse, PickResult } from "@/lib/types";
+import type { MarketItem, MixerEntry, MixerListResponse, PickResult, User, InventoryItem } from "@/lib/types";
 
 const API_URL = "";
 
 interface RequestOptions extends RequestInit {
   token?: string;
+}
+
+function errorMessage(res: Response, text: string): string {
+  try {
+    const body = JSON.parse(text);
+    if (typeof body.message === "string") return body.message;
+    if (typeof body.error === "string") return body.error;
+  } catch {
+    // not JSON — surface raw text
+  }
+  return text || `Request failed: ${res.status}`;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -28,14 +39,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
     const text = await res.text().catch(() => res.statusText);
-    let message = text || `Request failed: ${res.status}`;
-    try {
-      const data = JSON.parse(message);
-      if (typeof data.error === "string") message = data.error;
-    } catch {
-      // not JSON, use raw body
-    }
-    throw new Error(message);
+    throw new Error(errorMessage(res, text));
   }
 
   const text = await res.text();
@@ -51,21 +55,18 @@ export const api = {
   },
   user: {
     profile: (token: string) =>
-      request<{ id: number; username: string; balance: number; xp: number; level: number }>(
-        "/api/user/profile",
-        { token }
-      ),
+      request<User>("/api/user/profile", { token }),
   },
   inventory: {
     export: (token: string) =>
-      request<{ inventory_list: Array<{ id: number; user_id: number; material_id: number; material_name: string; amount: number; date_time: string }> | null }>(
+      request<{ inventory_list: InventoryItem[] | null }>(
         "/api/inventory/export",
         { token }
       ).then((res) => res.inventory_list ?? []),
   },
   market: {
     export: (token: string) =>
-      request<{ market_list: Array<{ id: number; user_id: number; material_id: number; username: string; material_name: string; amount: number; price: number; date_time: string }> | null }>(
+      request<{ market_list: MarketItem[] | null }>(
         "/api/market/export",
         { token }
       ).then((res) => res.market_list ?? []),

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from "react";
 import { sfx } from "@/lib/sfx";
 
 type ToastType = "success" | "error" | "info";
@@ -18,24 +18,34 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-let nextId = 0;
-
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const nextIdRef = useRef(1);
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      for (const t of timers) clearTimeout(t);
+      timers.clear();
+    };
+  }, []);
 
   const toast = useCallback((message: string, type: ToastType = "info") => {
     if (type === "error") sfx.error();
-    const id = nextId++;
+    const id = nextIdRef.current++;
     setToasts((prev) => [...prev, { id, message, type, exiting: false }]);
 
-    setTimeout(() => {
-      setToasts((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, exiting: true } : t))
-      );
-      setTimeout(() => {
+    const exitTimer = setTimeout(() => {
+      setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
+      const removeTimer = setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
+        timersRef.current.delete(exitTimer);
+        timersRef.current.delete(removeTimer);
       }, 200);
+      timersRef.current.add(removeTimer);
     }, 3000);
+    timersRef.current.add(exitTimer);
   }, []);
 
   const colorMap: Record<ToastType, { bg: string; border: string; text: string }> = {

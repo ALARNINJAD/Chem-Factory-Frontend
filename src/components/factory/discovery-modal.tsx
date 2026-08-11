@@ -6,7 +6,7 @@ import { useToast } from "@/components/toast";
 import { sfx } from "@/lib/sfx";
 import { MaterialIcon } from "@/components/material-icon";
 import { GameModal } from "@/components/factory/game-modal";
-import { CURATED_ICONS, getIconOverride, setIconOverride, clearIconOverride } from "@/lib/icons";
+import { CURATED_ICONS, UNKNOWN_ICON, getIconOverride, setIconOverride, clearIconOverride } from "@/lib/icons";
 import type { MixerEntry } from "@/lib/types";
 
 interface DiscoveryModalProps {
@@ -40,7 +40,16 @@ export function DiscoveryModal({ mix, onDone }: DiscoveryModalProps) {
     try {
       await pickNew(mix.id, { name: trimmed, price, mix_time: mixTime });
       if (icon && trimmed) setIconOverride(trimmed, icon);
-      const res = await pick(mix.id);
+      let res: Awaited<ReturnType<typeof pick>>;
+      try {
+        res = await pick(mix.id);
+      } catch (err) {
+        // the material is named server-side but the collect failed — surface
+        // the failure instead of leaving the user with a phantom discovery
+        toast(err instanceof Error ? err.message : "MATERIAL CREATED BUT NOT COLLECTED", "error");
+        onDone();
+        return;
+      }
       sfx.discover();
       if (res.is_picked) {
         toast(`DISCOVERED "${trimmed.toUpperCase()}"!`, "success");
@@ -64,7 +73,7 @@ export function DiscoveryModal({ mix, onDone }: DiscoveryModalProps) {
           <div className="pixel-panel pixel-panel--inset flex items-center gap-3 p-3 mb-3">
             <div className="sprite-slot animate-pulse-glow">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/items/Item_487.png" alt="new material" className="pixel-sprite-img" />
+              <img src={`/items/${UNKNOWN_ICON}`} alt="new material" className="pixel-sprite-img" />
             </div>
             <div className="text-[8px] text-[var(--text-secondary)] leading-relaxed">
               YOU DISCOVERED AN UNKNOWN COMBO!

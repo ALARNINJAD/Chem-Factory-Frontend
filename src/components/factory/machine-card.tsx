@@ -1,13 +1,10 @@
 "use client";
 
 import { useRef } from "react";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { useGame } from "@/lib/game-context";
 import { MaterialIcon } from "@/components/material-icon";
 import type { MixerEntry } from "@/lib/types";
-
-gsap.registerPlugin(useGSAP);
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);

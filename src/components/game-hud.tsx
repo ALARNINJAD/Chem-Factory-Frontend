@@ -3,14 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { useAuth } from "@/lib/auth-context";
 import { useGame } from "@/lib/game-context";
 import { useIsClient } from "@/lib/use-is-client";
 import { sfx } from "@/lib/sfx";
-
-gsap.registerPlugin(useGSAP);
 
 export function GameHud() {
   const { isAuthenticated, logout } = useAuth();

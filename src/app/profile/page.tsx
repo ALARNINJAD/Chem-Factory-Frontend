@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useIsClient } from "@/lib/use-is-client";
 import { useToast } from "@/components/toast";
 import { MaterialIcon } from "@/components/material-icon";
+import { LEVEL_XP } from "@/lib/constants";
 import type { User, InventoryItem, MarketItem, MixerEntry } from "@/lib/types";
 
 export default function ProfilePage() {
@@ -110,12 +111,12 @@ export default function ProfilePage() {
             <div className="mb-3">
               <div className="flex justify-between text-[8px] text-[var(--text-muted)] mb-1">
                 <span>XP</span>
-                <span>{user.xp} / 1000</span>
+                <span>{user.xp} / {LEVEL_XP}</span>
               </div>
               <div className="pixel-progress">
                 <div
                   className="pixel-progress__fill"
-                  style={{ width: `${Math.min((user.xp / 1000) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((user.xp / LEVEL_XP) * 100, 100)}%` }}
                 />
               </div>
             </div>

@@ -3,11 +3,8 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { useAuth } from "@/lib/auth-context";
-
-gsap.registerPlugin(useGSAP);
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
