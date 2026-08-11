@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useGame } from "@/lib/game-context";
 import { useToast } from "@/components/toast";
 import { sfx } from "@/lib/sfx";
-import { LEVEL_XP, SHOP_USERNAME } from "@/lib/constants";
+import { LEVEL_XP } from "@/lib/constants";
 import { MachineCard } from "@/components/factory/machine-card";
 import { DiscoveryModal } from "@/components/factory/discovery-modal";
 import { ShopStation } from "@/components/factory/station-shop";
@@ -115,8 +115,8 @@ export default function FactoryFloorPage() {
     { dependencies: [user?.xp, user?.level], revertOnUpdate: true }
   );
 
-  const shopItems = market.filter((m) => m.username === SHOP_USERNAME);
-  const playerItems = market.filter((m) => m.username !== SHOP_USERNAME);
+  const shopItems = market.filter((m) => m.user_id === 0);
+  const playerItems = market.filter((m) => m.user_id > 0);
 
   // prefill-once via key: remounting MixStation with a fresh key lets the
   // initializer seed the 1ST slot, while any local state the player edits
