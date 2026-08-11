@@ -28,7 +28,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
     const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed: ${res.status}`);
+    let message = text || `Request failed: ${res.status}`;
+    try {
+      const data = JSON.parse(message);
+      if (typeof data.error === "string") message = data.error;
+    } catch {
+      // not JSON, use raw body
+    }
+    throw new Error(message);
   }
 
   const text = await res.text();
