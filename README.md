@@ -3,8 +3,7 @@
 A retro pixel-art web frontend for the Chem-Factory chemical factory simulation game. Explore the factory floor, buy raw materials, combine them in mixing machines, and trade with other players on the market.
 
 ## Demo
-
-<video src="./chem-factory.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/14794dbc-dcfc-4ceb-9493-17afb1ef6464
 
 ## Features
 
