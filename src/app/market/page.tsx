@@ -35,6 +35,7 @@ function MarketPageContent({
   const [buyBusy, setBuyBusy] = useState(false);
 
   const ownedAmount = inv.find((i) => i.material_id === sellMaterialId)?.amount ?? 0;
+  const playerItems = items.filter((i) => i.user_id > 0);
 
   const fetchMarket = useCallback(async (token: string) => api.market.export(token), []);
   const fetchInventory = useCallback(async (token: string) => api.inventory.export(token), []);
@@ -144,7 +145,7 @@ function MarketPageContent({
                 </div>
               ))}
             </div>
-          ) : items.length === 0 ? (
+          ) : playerItems.length === 0 ? (
             <div className="pixel-panel pixel-panel--inset text-center py-8">
               <p className="text-[8px] text-[var(--text-muted)]">
                 NO ITEMS LISTED...
@@ -155,7 +156,7 @@ function MarketPageContent({
             </div>
           ) : (
             <div className="space-y-3">
-              {items.map((item) => (
+              {playerItems.map((item) => (
                 <div key={item.id} className="pixel-panel hover-lift hover-glow-amber">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
